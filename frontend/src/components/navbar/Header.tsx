@@ -7,10 +7,9 @@ import {
   Upload, 
   LayoutGrid, 
   RotateCcw, 
-  Cpu,
-  Sparkles,
-  ChevronRight,
-  ShieldCheck
+  Search,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { NetworkGraph } from '@/lib/types';
 
@@ -24,6 +23,8 @@ interface HeaderProps {
   onLoadJson: (graph: NetworkGraph) => void;
   onReset: () => void;
   isBackendOnline: boolean;
+  theme: 'light' | 'dark';
+  onToggleTheme: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -36,6 +37,8 @@ export const Header: React.FC<HeaderProps> = ({
   onLoadJson,
   onReset,
   isBackendOnline,
+  theme,
+  onToggleTheme,
 }) => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -56,87 +59,134 @@ export const Header: React.FC<HeaderProps> = ({
     reader.readAsText(file);
   };
 
+  const isDark = theme === 'dark';
+
   return (
-    <header className="h-16 bg-[#0c101c]/80 backdrop-blur-xl border-b border-white/[0.07] px-6 flex items-center justify-between z-30 select-none">
-      {/* Left: Brand Identity & Project Breadcrumb */}
+    <header className={`h-16 px-6 flex items-center justify-between z-30 select-none transition-colors duration-200 ${
+      isDark 
+        ? 'bg-[#0f1422]/90 backdrop-blur-xl border-b border-white/[0.08] shadow-md shadow-black/30 text-white' 
+        : 'bg-white/90 backdrop-blur-xl border-b border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.03)] text-slate-900'
+    }`}>
+      {/* Left: Brand & Search-Style Project Name Pill */}
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 p-0.5 shadow-lg shadow-blue-500/20 flex items-center justify-center">
-            <div className="w-full h-full bg-[#0c101c] rounded-[10px] flex items-center justify-center">
-              <Network className="w-4.5 h-4.5 text-blue-400" />
+          <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 p-0.5 shadow-md shadow-blue-600/20 flex items-center justify-center">
+            <div className={`w-full h-full rounded-[14px] flex items-center justify-center ${isDark ? 'bg-[#090c15]' : 'bg-slate-950'}`}>
+              <Network className="w-4.5 h-4.5 text-white" />
             </div>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold tracking-tight text-white font-sans">
+              <span className={`text-sm font-bold tracking-tight font-sans ${isDark ? 'text-white' : 'text-slate-900'}`}>
                 AXIAL
               </span>
-              <span className="text-[9px] font-mono font-semibold px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                ENTERPRISE
+              <span className={`text-[10px] font-mono font-medium px-2 py-0.5 rounded-full border ${
+                isDark 
+                  ? 'bg-white/[0.06] text-blue-400 border-white/[0.08]' 
+                  : 'bg-slate-100 text-slate-600 border-slate-200'
+              }`}>
+                STUDIO
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 font-medium">Network Resilience Platform</p>
+            <p className={`text-[11px] font-medium -mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>Resilience Engine</p>
           </div>
         </div>
 
-        <div className="h-5 w-px bg-white/[0.08]" />
+        <div className={`h-5 w-px ${isDark ? 'bg-white/[0.08]' : 'bg-slate-200'}`} />
 
-        {/* Project Name Editable Pill */}
-        <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] transition-colors">
-          <span className="text-[11px] text-slate-400 font-medium">Topology:</span>
+        {/* Minimal Search/Rename Pill */}
+        <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full border transition-all shadow-sm ${
+          isDark 
+            ? 'bg-white/[0.03] border-white/[0.08] hover:border-white/[0.15] hover:bg-white/[0.06]' 
+            : 'bg-slate-100/90 border-slate-200/80 hover:border-slate-300 hover:bg-white'
+        }`}>
+          <Search className="w-3.5 h-3.5 text-slate-400" />
           <input
             type="text"
             value={projectName}
             onChange={e => onProjectNameChange(e.target.value)}
-            className="bg-transparent text-xs font-semibold text-slate-200 focus:outline-none focus:text-white w-44 tracking-tight"
-            placeholder="Project Name..."
+            className={`bg-transparent text-xs font-semibold placeholder-slate-400 focus:outline-none w-48 tracking-tight ${
+              isDark ? 'text-slate-200 focus:text-white' : 'text-slate-800'
+            }`}
+            placeholder="Search or rename project..."
           />
         </div>
       </div>
 
-      {/* Center: Segmented Mode Switcher */}
-      <div className="flex items-center p-1 rounded-xl bg-[#131828]/90 border border-white/[0.08] shadow-inner">
+      {/* Center: Clean Rounded-Full Mode Switcher */}
+      <div className={`flex items-center p-1 rounded-full border shadow-inner ${
+        isDark ? 'bg-[#141b2d] border-white/[0.08]' : 'bg-slate-100/90 border-slate-200/90'
+      }`}>
         <button
           onClick={() => onModeChange('build')}
-          className={`px-4 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 transition-all cursor-pointer ${
+          className={`px-4 py-1.5 rounded-full text-xs font-medium flex items-center gap-2 transition-all cursor-pointer ${
             mode === 'build'
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30 font-semibold'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+              ? isDark 
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30 font-semibold' 
+                : 'bg-white text-slate-900 shadow-sm font-semibold border border-slate-200/60'
+              : isDark
+              ? 'text-slate-400 hover:text-slate-200'
+              : 'text-slate-500 hover:text-slate-900'
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
-          <span>Build & Topology</span>
+          <span>Build Canvas</span>
         </button>
 
         <button
           onClick={() => onModeChange('analyze')}
-          className={`px-4 py-1.5 rounded-lg text-xs font-medium flex items-center gap-2 transition-all cursor-pointer ${
+          className={`px-4 py-1.5 rounded-full text-xs font-medium flex items-center gap-2 transition-all cursor-pointer ${
             mode === 'analyze'
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30 font-semibold'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]'
+              ? isDark 
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30 font-semibold' 
+                : 'bg-slate-900 text-white shadow-sm font-semibold'
+              : isDark
+              ? 'text-slate-400 hover:text-slate-200'
+              : 'text-slate-500 hover:text-slate-900'
           }`}
         >
           <Activity className="w-3.5 h-3.5" />
-          <span>Simulate & Analyze</span>
+          <span>Attack & Analyze</span>
         </button>
       </div>
 
-      {/* Right: Actions, Import/Export & Engine Health */}
-      <div className="flex items-center gap-2.5">
+      {/* Right: Actions, Theme Toggle, Import/Export & Engine Status */}
+      <div className="flex items-center gap-2">
+        {/* Theme Toggle Button */}
+        <button
+          onClick={onToggleTheme}
+          className={`p-2 rounded-full text-xs border transition-all cursor-pointer shadow-sm ${
+            isDark 
+              ? 'bg-white/[0.06] hover:bg-white/[0.12] border-white/[0.08] text-amber-300' 
+              : 'bg-slate-100/80 hover:bg-slate-200/80 border-slate-200/80 text-slate-700'
+          }`}
+          title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+        >
+          {isDark ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+        </button>
+
         <button
           onClick={onOpenTemplates}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.07] text-slate-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+          className={`px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow ${
+            isDark
+              ? 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] text-slate-300 hover:text-white'
+              : 'bg-slate-100/80 hover:bg-slate-200/80 border-slate-200/80 text-slate-700'
+          }`}
         >
-          <LayoutGrid className="w-3.5 h-3.5 text-blue-400" />
+          <LayoutGrid className="w-3.5 h-3.5 text-blue-500" />
           <span>Templates</span>
         </button>
 
         <button
           onClick={onSaveJson}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.07] text-slate-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+          className={`px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow ${
+            isDark
+              ? 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] text-slate-300 hover:text-white'
+              : 'bg-slate-100/80 hover:bg-slate-200/80 border-slate-200/80 text-slate-700'
+          }`}
         >
           <Download className="w-3.5 h-3.5 text-slate-400" />
-          <span>Export JSON</span>
+          <span>Export</span>
         </button>
 
         <input
@@ -149,7 +199,11 @@ export const Header: React.FC<HeaderProps> = ({
 
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="px-3 py-1.5 rounded-lg text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.07] text-slate-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+          className={`px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow ${
+            isDark
+              ? 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] text-slate-300 hover:text-white'
+              : 'bg-slate-100/80 hover:bg-slate-200/80 border-slate-200/80 text-slate-700'
+          }`}
         >
           <Upload className="w-3.5 h-3.5 text-slate-400" />
           <span>Import</span>
@@ -157,16 +211,22 @@ export const Header: React.FC<HeaderProps> = ({
 
         <button
           onClick={onReset}
-          className="p-2 rounded-lg text-xs bg-white/[0.04] hover:bg-rose-500/10 border border-white/[0.07] hover:border-rose-500/30 text-slate-400 hover:text-rose-400 transition-all cursor-pointer"
+          className={`p-2 rounded-full text-xs border transition-all cursor-pointer shadow-sm ${
+            isDark
+              ? 'bg-white/[0.04] hover:bg-rose-500/20 border-white/[0.08] text-slate-400 hover:text-rose-400'
+              : 'bg-slate-100/80 hover:bg-rose-50 border-slate-200/80 hover:border-rose-200 text-slate-500 hover:text-rose-600'
+          }`}
           title="Reset Topology Canvas"
         >
           <RotateCcw className="w-3.5 h-3.5" />
         </button>
 
-        <div className="h-5 w-px bg-white/[0.08]" />
+        <div className={`h-5 w-px ${isDark ? 'bg-white/[0.08]' : 'bg-slate-200'}`} />
 
         {/* Backend Status Live Badge */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] text-xs font-medium">
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium shadow-sm ${
+          isDark ? 'bg-white/[0.03] border-white/[0.08]' : 'bg-white border-slate-200/90'
+        }`}>
           <span className="relative flex h-2 w-2">
             <span
               className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
@@ -179,10 +239,12 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             />
           </span>
-          <span className="text-slate-400 text-[11px]">Engine:</span>
+          <span className="text-slate-400 text-[11px] font-medium">Engine:</span>
           <span
             className={`font-mono text-[11px] font-semibold ${
-              isBackendOnline ? 'text-emerald-400' : 'text-amber-400'
+              isBackendOnline 
+                ? isDark ? 'text-emerald-400' : 'text-emerald-700' 
+                : isDark ? 'text-amber-400' : 'text-amber-700'
             }`}
           >
             {isBackendOnline ? 'ONLINE' : 'STANDBY'}

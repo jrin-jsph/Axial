@@ -8,10 +8,8 @@ import {
   Wifi, 
   Monitor, 
   Radio, 
-  Plus, 
-  Info,
   Layers,
-  Sparkles
+  Info
 } from 'lucide-react';
 import { NodeType } from '@/lib/types';
 
@@ -45,22 +43,22 @@ export const ComponentPalette: React.FC = () => {
   };
 
   return (
-    <aside className="w-72 bg-[#0c101c]/90 backdrop-blur-xl border-r border-white/[0.07] flex flex-col h-full z-10 select-none">
+    <aside className="w-72 bg-white/95 dark:bg-[#0f1422]/95 backdrop-blur-xl border-r border-slate-200/80 dark:border-white/[0.08] flex flex-col h-full z-10 select-none shadow-[1px_0_3px_rgba(0,0,0,0.02)]">
       {/* Header */}
-      <div className="p-4 border-b border-white/[0.07] bg-white/[0.01]">
+      <div className="p-4 border-b border-slate-200/80 dark:border-white/[0.08] bg-slate-50/50 dark:bg-white/[0.02]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Layers className="w-4 h-4 text-blue-400" />
-            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-200 font-mono">
+            <Layers className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+            <h2 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white font-mono">
               Component Palette
             </h2>
           </div>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/[0.05] text-slate-400 border border-white/[0.06]">
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/[0.08]">
             8 Items
           </span>
         </div>
-        <p className="text-[11px] text-slate-400 mt-1">
-          Drag elements onto the canvas to architect topology.
+        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+          Drag elements onto canvas to architect topology.
         </p>
       </div>
 
@@ -69,7 +67,7 @@ export const ComponentPalette: React.FC = () => {
         {/* Tier 1 Section */}
         <div>
           <div className="flex items-center justify-between mb-2 px-1">
-            <span className="text-[10px] font-mono font-semibold tracking-wider text-blue-400 uppercase">
+            <span className="text-[10px] font-mono font-semibold tracking-wider text-blue-600 dark:text-blue-400 uppercase">
               Tier 1 • Core Ingress
             </span>
           </div>
@@ -83,7 +81,7 @@ export const ComponentPalette: React.FC = () => {
         {/* Tier 2 Section */}
         <div>
           <div className="flex items-center justify-between mb-2 px-1">
-            <span className="text-[10px] font-mono font-semibold tracking-wider text-indigo-400 uppercase">
+            <span className="text-[10px] font-mono font-semibold tracking-wider text-purple-600 dark:text-purple-400 uppercase">
               Tier 2 • Distribution
             </span>
           </div>
@@ -97,7 +95,7 @@ export const ComponentPalette: React.FC = () => {
         {/* Tier 3 Section */}
         <div>
           <div className="flex items-center justify-between mb-2 px-1">
-            <span className="text-[10px] font-mono font-semibold tracking-wider text-slate-400 uppercase">
+            <span className="text-[10px] font-mono font-semibold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
               Tier 3 • Edge & Access
             </span>
           </div>
@@ -110,10 +108,10 @@ export const ComponentPalette: React.FC = () => {
       </div>
 
       {/* Footer Info */}
-      <div className="p-3.5 border-t border-white/[0.07] bg-white/[0.02] text-[11px] text-slate-400 flex items-start gap-2.5">
-        <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+      <div className="p-3.5 border-t border-slate-200/80 dark:border-white/[0.08] bg-slate-50/60 dark:bg-white/[0.02] text-[11px] text-slate-500 dark:text-slate-400 flex items-start gap-2.5">
+        <Info className="w-4 h-4 text-slate-600 dark:text-slate-400 shrink-0 mt-0.5" />
         <span className="leading-snug">
-          Click and drag from node connection ports to draw bidirectional links.
+          Drag handles between nodes to connect links.
         </span>
       </div>
     </aside>
@@ -130,31 +128,31 @@ const PaletteCard: React.FC<PaletteCardProps> = ({ item, onDragStart }) => {
 
   const iconBg =
     item.tier === 1
-      ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+      ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-500/20'
       : item.tier === 2
-      ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
-      : 'bg-white/[0.04] text-slate-300 border-white/[0.08]';
+      ? 'bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-100 dark:border-purple-500/20'
+      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700';
 
   return (
     <div
       draggable
       onDragStart={e => onDragStart(e, item)}
-      className="p-2.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.06] hover:border-blue-500/30 cursor-grab active:cursor-grabbing transition-all duration-150 group shadow-sm"
+      className="p-2.5 rounded-2xl bg-white dark:bg-[#141a2c] hover:bg-slate-50/80 dark:hover:bg-[#1a233a] border border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.18] cursor-grab active:cursor-grabbing transition-all duration-150 group shadow-[0_1px_3px_rgba(0,0,0,0.03)] dark:shadow-none hover:shadow-sm"
     >
       <div className="flex items-center gap-2.5">
-        <div className={`p-2 rounded-lg border ${iconBg} group-hover:scale-105 transition-transform shrink-0`}>
+        <div className={`p-2 rounded-xl border ${iconBg} group-hover:scale-105 transition-transform shrink-0`}>
           <Icon className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-200 group-hover:text-white transition-colors truncate">
+            <span className="text-xs font-semibold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">
               {item.name}
             </span>
-            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/[0.05] text-slate-400 font-medium">
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-400 font-medium border border-transparent dark:border-white/[0.04]">
               {item.capacity}G
             </span>
           </div>
-          <p className="text-[10px] text-slate-400 truncate mt-0.5">
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
             {item.description}
           </p>
         </div>

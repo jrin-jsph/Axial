@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import confetti from 'canvas-confetti';
 import { NetworkGraph, AppNode, AppEdge, CriticalityNode, ResilienceResult, MengerResult } from '@/lib/types';
 import { STARTER_TEMPLATES, StarterTemplate } from '@/lib/templates';
 import {
@@ -23,6 +24,31 @@ export default function Home() {
   const [mode, setMode] = useState<'build' | 'analyze'>('build');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
   const [isBackendOnline, setIsBackendOnline] = useState<boolean>(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+
+  // Hydrate theme from localStorage (default to 'dark')
+  useEffect(() => {
+    const savedTheme = (localStorage.getItem('axial_theme') as 'light' | 'dark') || 'dark';
+    setTheme(savedTheme);
+    if (savedTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  const handleToggleTheme = () => {
+    setTheme(prev => {
+      const next = prev === 'light' ? 'dark' : 'light';
+      localStorage.setItem('axial_theme', next);
+      if (next === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      return next;
+    });
+  };
 
   // Attack & Simulation State
   const [attackedNodes, setAttackedNodes] = useState<string[]>([]);
@@ -120,6 +146,16 @@ export default function Home() {
     setCapacityLostG(0);
     setStepCaption('');
     refreshAnalysisData(graph);
+    try {
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.8 },
+        colors: ['#2563eb', '#10b981', '#6366f1', '#f59e0b']
+      });
+    } catch {
+      // Confetti fallback
+    }
   };
 
   // Run Preset Attack Scenarios
@@ -178,6 +214,16 @@ export default function Home() {
     setGraph(template.graph);
     setProjectName(template.name);
     handleResetAttack();
+    try {
+      confetti({
+        particleCount: 40,
+        spread: 50,
+        origin: { y: 0.3 },
+        colors: ['#2563eb', '#7c3aed', '#059669']
+      });
+    } catch {
+      // Confetti fallback
+    }
   };
 
   // Save Graph JSON Download
@@ -214,7 +260,9 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#090c15] text-slate-100 font-sans">
+    <div className={`flex flex-col h-screen w-screen overflow-hidden font-sans transition-colors duration-200 ${
+      theme === 'dark' ? 'bg-[#090c15] text-slate-100' : 'bg-[#f8fafc] text-slate-900'
+    }`}>
       {/* Header Bar */}
       <Header
         mode={mode}
@@ -226,6 +274,8 @@ export default function Home() {
         onLoadJson={handleLoadJson}
         onReset={handleReset}
         isBackendOnline={isBackendOnline}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
       />
 
       {/* Main Workspace Body */}
@@ -256,12 +306,17 @@ export default function Home() {
                   mengerPaths={mengerResult?.vertex_disjoint_paths}
                   onToggleTargetNode={handleToggleTargetNode}
                   onToggleTargetEdge={handleToggleTargetEdge}
+                  theme={theme}
                 />
               </div>
             </div>
 
             {/* Analysis Dashboard Sidebar */}
-            <aside className="w-96 bg-[#0c101c]/95 backdrop-blur-2xl border-l border-white/[0.08] p-5 overflow-y-auto space-y-4 h-full shadow-2xl">
+            <aside className={`w-96 backdrop-blur-2xl border-l p-5 overflow-y-auto space-y-4 h-full transition-colors duration-200 ${
+              theme === 'dark' 
+                ? 'bg-[#0c101c]/95 border-white/[0.08] shadow-2xl text-slate-100' 
+                : 'bg-white/95 border-slate-200/80 shadow-[-4px_0_24px_rgba(0,0,0,0.02)] text-slate-900'
+            }`}>
               <StatsPanel
                 resilience={resilience}
                 totalNodesCount={graph.nodes.length}

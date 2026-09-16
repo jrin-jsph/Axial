@@ -27,8 +27,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`dark ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}>
-      <body className="bg-[#090c15] text-slate-100 font-sans antialiased min-h-screen selection:bg-blue-500/25 selection:text-blue-200">
+    <html lang="en" className={`dark ${plusJakartaSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+      <body className="bg-[#f8fafc] text-slate-900 dark:bg-[#090c15] dark:text-slate-100 font-sans antialiased min-h-screen selection:bg-blue-500/25 selection:text-blue-500 transition-colors duration-200">
         {children}
       </body>
     </html>

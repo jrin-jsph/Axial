@@ -57,11 +57,11 @@ const BuilderCanvasContent: React.FC<BuilderCanvasProps> = ({ graph, onGraphChan
       source: e.source,
       target: e.target,
       label: `${e.capacity}G • ${e.latency}ms`,
-      labelStyle: { fill: '#94a3b8', fontSize: 10, fontFamily: 'monospace', fontWeight: 500 },
-      labelBgStyle: { fill: '#0f1422', fillOpacity: 0.9, rx: 6, ry: 6 },
+      labelStyle: { fill: '#475569', fontSize: 10, fontFamily: 'monospace', fontWeight: 600 },
+      labelBgStyle: { fill: '#ffffff', fillOpacity: 0.95, rx: 8, ry: 8 },
       labelBgPadding: [6, 4] as [number, number],
       style: { 
-        stroke: e.status === 'damaged' ? '#f43f5e' : '#3b82f6', 
+        stroke: e.status === 'damaged' ? '#e11d48' : '#3b82f6', 
         strokeWidth: 2,
         opacity: e.status === 'offline' ? 0.3 : 0.8
       },
@@ -159,8 +159,8 @@ const BuilderCanvasContent: React.FC<BuilderCanvasProps> = ({ graph, onGraphChan
         ...params,
         id: newEdgeId,
         label: '20G • 5ms',
-        labelStyle: { fill: '#94a3b8', fontSize: 10, fontFamily: 'monospace', fontWeight: 500 },
-        labelBgStyle: { fill: '#0f1422', fillOpacity: 0.9, rx: 6, ry: 6 },
+        labelStyle: { fill: '#475569', fontSize: 10, fontFamily: 'monospace', fontWeight: 600 },
+        labelBgStyle: { fill: '#ffffff', fillOpacity: 0.95, rx: 8, ry: 8 },
         labelBgPadding: [6, 4] as [number, number],
         style: { stroke: '#3b82f6', strokeWidth: 2, opacity: 0.8 },
         animated: true,
@@ -274,7 +274,7 @@ const BuilderCanvasContent: React.FC<BuilderCanvasProps> = ({ graph, onGraphChan
           ? {
               ...e,
               label: `${updated.capacity}G • ${updated.latency}ms`,
-              style: { stroke: updated.status === 'damaged' ? '#f43f5e' : '#3b82f6', strokeWidth: 2 },
+              style: { stroke: updated.status === 'damaged' ? '#e11d48' : '#3b82f6', strokeWidth: 2 },
               animated: updated.status === 'active',
               data: { capacity: updated.capacity, latency: updated.latency, status: updated.status },
             }
@@ -304,7 +304,7 @@ const BuilderCanvasContent: React.FC<BuilderCanvasProps> = ({ graph, onGraphChan
   };
 
   return (
-    <div className="flex w-full h-[calc(100vh-64px)] relative bg-[#090c15] bg-blueprint-grid">
+    <div className="flex w-full h-[calc(100vh-64px)] relative bg-[#f8fafc] bg-blueprint-grid">
       {/* Component Palette Sidebar */}
       <ComponentPalette />
 
@@ -324,17 +324,17 @@ const BuilderCanvasContent: React.FC<BuilderCanvasProps> = ({ graph, onGraphChan
           fitView
           className="bg-transparent"
         >
-          <Background color="rgba(255, 255, 255, 0.05)" gap={28} size={1} />
+          <Background color="#cbd5e1" gap={28} size={1} />
           <Controls position="top-left" />
           <MiniMap
             nodeColor={node => {
               const data = node.data as unknown as CustomNodeData;
-              if (data.status === 'damaged') return '#f43f5e';
-              if (data.tier === 1) return '#3b82f6';
-              if (data.tier === 2) return '#6366f1';
-              return '#64748b';
+              if (data.status === 'damaged') return '#e11d48';
+              if (data.tier === 1) return '#2563eb';
+              if (data.tier === 2) return '#7c3aed';
+              return '#94a3b8';
             }}
-            maskColor="rgba(9, 12, 21, 0.85)"
+            maskColor="rgba(248, 250, 252, 0.8)"
           />
         </ReactFlow>
       </div>

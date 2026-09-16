@@ -54,9 +54,11 @@ It allows engineers, architects, students, and cybersecurity researchers to visu
 
 ### 📁 Templates & Persistence
 - **Starter Templates**:
-  - 🏛️ *University Campus Network* (Core Datacenter to Department Labs & Dorm WiFi).
-  - 🏢 *Corporate HQ Infrastructure* (Dual multi-homed ISP fiber, DB clusters, floor ring redundancy).
-  - 🏙️ *Metropolitan ISP Backbone* (City Internet Exchange, regional ring routers, 5G towers, power grid substations).
+  - ⚡ **National Critical Energy & Smart Grid** (Dual federal dispatch centers, inter-regional HVDC ties, nuclear safety vault, and microgrid distribution ring).
+  - 💳 **Global High-Frequency Trading & Banking Cloud** (London, NY & Tokyo financial exchanges with trans-oceanic fiber and redundant SWIFT vaults).
+  - 🏛️ **University Campus Network** (Core Datacenter to Department Labs & Dorm WiFi).
+  - 🏢 **Corporate HQ Infrastructure** (Dual multi-homed ISP fiber, DB clusters, floor ring redundancy).
+  - 🏙️ **Metropolitan ISP Backbone** (City Internet Exchange, regional ring routers, 5G towers, power grid substations).
 - **JSON Import / Export**: Save topologies locally as JSON files and load them at any time.
 
 ---

@@ -194,11 +194,19 @@ Axial includes three industry-standard starter topologies:
    - **Topology**: Gateway $\rightarrow$ Central Datacenter Core $\rightarrow$ CS Department, Engineering Labs, Library, and Dormitory hubs.
    - **Key Feature**: Includes a redundant cross-link between the CS and Engineering switches to demonstrate multi-path failover.
 
-2. **Corporate HQ Infrastructure (`corporate_hq`)**:
+2. **National Critical Energy & Smart Grid (`smart_grid`)**:
+   - **Topology**: Dual federal dispatch centers (Primary + Backup), inter-regional HVDC ties, nuclear safety vault, and microgrid distribution ring (16 nodes, 22 links).
+   - **Attack Showcase**: Demonstrates multi-hub cascade blackouts, SCADA telemetry loss, and inter-substation ring failovers under regional attack.
+
+3. **Global High-Frequency Trading & Banking Cloud (`global_fintech`)**:
+   - **Topology**: Ultra-low-latency financial backbone connecting London, New York, and Tokyo exchanges via trans-oceanic subsea fiber and redundant SWIFT vaults (15 nodes, 23 links).
+   - **Attack Showcase**: Shows Menger theorem multi-path rerouting across continents, subsea fiber cuts, and transaction volume capacity retention under targeted strikes.
+
+4. **Corporate HQ Infrastructure (`corporate_hq`)**:
    - **Topology**: Dual ISP fiber entry points (AT&T + Verizon), high-availability database cluster, and ring floor distribution (Floor 1 $\leftrightarrow$ Floor 2 $\leftrightarrow$ Floor 3).
    - **Key Feature**: Ring topology prevents floor outages if a single switch fails.
 
-3. **Metropolitan ISP Backbone (`city_backbone`)**:
+5. **Metropolitan ISP Backbone (`city_backbone`)**:
    - **Topology**: City Internet Exchange (IXP) connecting North & South core routers in a dual ring to 5G towers, municipal power substations, and rail control centers.
    - **Key Feature**: High throughput (200 Gbps) and multi-region failover.
 

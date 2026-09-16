@@ -1,5 +1,5 @@
-import React from 'react';
-import { ShieldAlert, RefreshCw, Play, Crosshair, Sparkles, Terminal } from 'lucide-react';
+import React, { useState } from 'react';
+import { ShieldAlert, RefreshCw, Play, Crosshair, Sparkles, Gauge, FastForward, CheckCircle2 } from 'lucide-react';
 
 interface AttackPanelProps {
   attackedNodes: string[];
@@ -22,37 +22,56 @@ export const AttackPanel: React.FC<AttackPanelProps> = ({
   stepCaption,
   stepNumber,
 }) => {
+  const [speedMultiplier, setSpeedMultiplier] = useState<'0.5x' | '1x' | '2x'>('1x');
+
   return (
-    <div className="bg-[#0c101c]/80 backdrop-blur-xl border-b border-white/[0.08] p-4.5 space-y-3.5 shadow-md">
+    <div className="bg-white/95 dark:bg-[#0f1422]/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/[0.08] p-4 space-y-3 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
       {/* Top Controls Bar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="p-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400">
-            <ShieldAlert className="w-4.5 h-4.5" />
+          <div className="p-2 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/30 text-rose-600 dark:text-rose-400 shadow-sm">
+            <ShieldAlert className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-xs font-bold text-slate-100 uppercase font-mono tracking-wider">
-              Attack & Disruption Simulator
+            <h2 className="text-xs font-bold text-slate-900 dark:text-white uppercase font-mono tracking-wider">
+              Stress & Attack Simulator
             </h2>
-            <p className="text-[11px] text-slate-400">Target components or trigger automated stress test presets</p>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">Stage target strikes, sever links, or trigger cascade presets</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2.5">
+          {/* Simulation Speed Pill Toggle */}
+          <div className="flex items-center p-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] text-[10px] font-mono font-semibold text-slate-600 dark:text-slate-400">
+            {(['0.5x', '1x', '2x'] as const).map(s => (
+              <button
+                key={s}
+                onClick={() => setSpeedMultiplier(s)}
+                className={`px-2 py-0.5 rounded-full transition-all cursor-pointer ${
+                  speedMultiplier === s 
+                    ? 'bg-white dark:bg-white/20 text-slate-900 dark:text-white shadow-sm font-bold' 
+                    : 'hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+
           <button
             onClick={onExecuteAttack}
             disabled={attackedNodes.length === 0 && attackedEdges.length === 0}
-            className="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-500 disabled:opacity-40 disabled:hover:bg-rose-600 text-white shadow-lg shadow-rose-600/30 transition-all flex items-center gap-2 cursor-pointer"
+            className="px-4 py-2 rounded-2xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:hover:bg-rose-600 text-white shadow-sm transition-all flex items-center gap-2 cursor-pointer"
           >
             <Crosshair className="w-4 h-4" />
-            <span>Execute Target Attack ({attackedNodes.length})</span>
+            <span>Execute Attack ({attackedNodes.length + attackedEdges.length} Targets)</span>
           </button>
 
           <button
             onClick={onResetAttack}
-            className="px-3.5 py-2 rounded-xl text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-3.5 py-2 rounded-2xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200/80 dark:hover:bg-white/[0.12] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-blue-400" />
+            <RefreshCw className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
             <span>Restore Health</span>
           </button>
         </div>
@@ -62,39 +81,39 @@ export const AttackPanel: React.FC<AttackPanelProps> = ({
       <div className="grid grid-cols-3 gap-3">
         <button
           onClick={() => onRunPreset('single_point')}
-          className="p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] hover:border-amber-500/40 transition-all text-left group cursor-pointer shadow-sm"
+          className="p-3 rounded-2xl bg-slate-50/80 dark:bg-white/[0.03] hover:bg-slate-100/90 dark:hover:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.06] hover:border-amber-400/60 dark:hover:border-amber-400/60 transition-all text-left group cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
         >
-          <div className="flex items-center justify-between text-xs font-semibold text-amber-400 group-hover:text-amber-300">
+          <div className="flex items-center justify-between text-xs font-semibold text-amber-700 dark:text-amber-400 group-hover:text-amber-800 dark:group-hover:text-amber-300">
             <span>Single Point of Failure</span>
             <Play className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
           </div>
-          <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
             Target primary core router articulation point
           </p>
         </button>
 
         <button
           onClick={() => onRunPreset('regional')}
-          className="p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] hover:border-indigo-500/40 transition-all text-left group cursor-pointer shadow-sm"
+          className="p-3 rounded-2xl bg-slate-50/80 dark:bg-white/[0.03] hover:bg-slate-100/90 dark:hover:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.06] hover:border-purple-400/60 dark:hover:border-purple-400/60 transition-all text-left group cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
         >
-          <div className="flex items-center justify-between text-xs font-semibold text-indigo-400 group-hover:text-indigo-300">
+          <div className="flex items-center justify-between text-xs font-semibold text-purple-700 dark:text-purple-400 group-hover:text-purple-800 dark:group-hover:text-purple-300">
             <span>Regional Outage</span>
             <Play className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
           </div>
-          <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
             Simulate multi-hub power outage across distribution grid
           </p>
         </button>
 
         <button
           onClick={() => onRunPreset('coordinated')}
-          className="p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] hover:border-rose-500/40 transition-all text-left group cursor-pointer shadow-sm"
+          className="p-3 rounded-2xl bg-slate-50/80 dark:bg-white/[0.03] hover:bg-slate-100/90 dark:hover:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.06] hover:border-rose-400/60 dark:hover:border-rose-400/60 transition-all text-left group cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.02)]"
         >
-          <div className="flex items-center justify-between text-xs font-semibold text-rose-400 group-hover:text-rose-300">
+          <div className="flex items-center justify-between text-xs font-semibold text-rose-700 dark:text-rose-400 group-hover:text-rose-800 dark:group-hover:text-rose-300">
             <span>Coordinated Attack</span>
             <Play className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
           </div>
-          <p className="text-[10px] text-slate-400 mt-1 line-clamp-1">
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
             Multi-vector strike targeting backbone routers and fiber links
           </p>
         </button>
@@ -102,11 +121,11 @@ export const AttackPanel: React.FC<AttackPanelProps> = ({
 
       {/* Live Simulation Step Caption Banner */}
       {stepCaption && (
-        <div className="p-3 rounded-xl bg-[#0e1424] border border-blue-500/30 flex items-center gap-3 text-xs font-mono text-blue-300 shadow-lg shadow-blue-500/10 animate-in fade-in duration-150">
-          <div className="flex items-center gap-1 text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-md font-bold shrink-0 border border-blue-500/30">
-            STEP {stepNumber || 1}/4
+        <div className="p-3 rounded-2xl bg-slate-900 dark:bg-[#141a2c] text-white border border-slate-800 dark:border-white/[0.08] flex items-center gap-3 text-xs font-mono shadow-md animate-in fade-in duration-150">
+          <div className="flex items-center gap-1 text-[10px] bg-white/10 dark:bg-blue-500/20 text-white dark:text-blue-300 px-2 py-0.5 rounded-full font-bold shrink-0 border border-white/15 dark:border-blue-500/30">
+            STEP {stepNumber || 1} OF 4
           </div>
-          <div className="flex-1 truncate font-medium text-slate-200">{stepCaption}</div>
+          <div className="flex-1 truncate font-medium text-slate-100 dark:text-slate-200">{stepCaption}</div>
           {isSimulating && <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-400 shrink-0" />}
         </div>
       )}
