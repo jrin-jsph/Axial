@@ -107,3 +107,18 @@ export interface PresetScenario {
   description: string;
   iconName: string;
 }
+
+export interface SavedProject {
+  id: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+  graph: NetworkGraph;
+  nodeCount: number;
+  edgeCount: number;
+  totalCapacityGbps: number;
+  resilienceScore?: number;
+  grade?: string;
+  category?: string;
+}

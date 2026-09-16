@@ -11,12 +11,23 @@ import {
 
 import { Header } from '@/components/navbar/Header';
 import { TemplateModal } from '@/components/navbar/TemplateModal';
+import { IntroductionModal } from '@/components/navbar/IntroductionModal';
+import { ProjectsDashboard } from '@/components/projects/ProjectsDashboard';
 import { BuilderCanvas } from '@/components/build/BuilderCanvas';
 import { AnalyzeCanvas } from '@/components/analyze/AnalyzeCanvas';
 import { AttackPanel } from '@/components/analyze/AttackPanel';
 import { StatsPanel } from '@/components/analyze/StatsPanel';
 import { LeaderboardPanel } from '@/components/analyze/LeaderboardPanel';
 import { MengerPathPanel } from '@/components/analyze/MengerPathPanel';
+import { 
+  getSavedProjects, 
+  createNewProject, 
+  updateProject, 
+  deleteProject, 
+  seedSampleProjectsIfEmpty,
+  saveProjectList 
+} from '@/lib/storage';
+import { SavedProject } from '@/lib/types';
 
 const EMPTY_GRAPH: NetworkGraph = {
   nodes: [],
@@ -24,15 +35,22 @@ const EMPTY_GRAPH: NetworkGraph = {
 };
 
 export default function Home() {
+  const [savedProjects, setSavedProjects] = useState<SavedProject[]>([]);
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+  const [currentView, setCurrentView] = useState<'dashboard' | 'workspace'>('workspace');
   const [graph, setGraph] = useState<NetworkGraph>(EMPTY_GRAPH);
   const [projectName, setProjectName] = useState<string>('Untitled Topology');
   const [mode, setMode] = useState<'build' | 'analyze'>('build');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
+  const [isIntroOpen, setIsIntroOpen] = useState<boolean>(false);
   const [isBackendOnline, setIsBackendOnline] = useState<boolean>(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+  const [isSaved, setIsSaved] = useState<boolean>(false);
+  const introFileInputRef = React.useRef<HTMLInputElement | null>(null);
 
-  // Hydrate theme from localStorage (default to 'dark')
+  // Initialize and Hydrate saved projects & theme on startup
   useEffect(() => {
+    // Theme hydration
     const savedTheme = (localStorage.getItem('axial_theme') as 'light' | 'dark') || 'dark';
     setTheme(savedTheme);
     if (savedTheme === 'dark') {
@@ -40,6 +58,14 @@ export default function Home() {
     } else {
       document.documentElement.classList.remove('dark');
     }
+
+    // Projects hydration with starter blueprints seeded if empty
+    const existing = seedSampleProjectsIfEmpty();
+    setSavedProjects(existing);
+
+    // Show Intro Modal first, backed by the 'My Networks' Dashboard view
+    setCurrentView('dashboard');
+    setIsIntroOpen(true);
   }, []);
 
   const handleToggleTheme = () => {
@@ -214,10 +240,60 @@ export default function Home() {
     setMengerResult(res);
   };
 
+  // Open existing project from dashboard
+  const handleOpenProject = (project: SavedProject, initialMode: 'build' | 'analyze' = 'build') => {
+    setGraph(project.graph);
+    setProjectName(project.name);
+    setCurrentProjectId(project.id);
+    setMode(initialMode);
+    setCurrentView('workspace');
+    handleResetAttack();
+  };
+
+  // Delete project from library
+  const handleDeleteProject = (projectId: string) => {
+    const updated = deleteProject(projectId);
+    setSavedProjects(updated);
+    if (currentProjectId === projectId) {
+      setCurrentProjectId(null);
+    }
+  };
+
+  // Save current workspace graph to library
+  const handleSaveToLibrary = () => {
+    if (graph.nodes.length === 0) {
+      alert('Cannot save an empty topology. Add nodes first.');
+      return;
+    }
+
+    if (currentProjectId) {
+      const updated = updateProject(currentProjectId, {
+        name: projectName,
+        graph,
+        resilience,
+      });
+      setSavedProjects(updated);
+    } else {
+      const newProj = createNewProject(projectName, graph, undefined, resilience);
+      setCurrentProjectId(newProj.id);
+      setSavedProjects(getSavedProjects());
+    }
+
+    setIsSaved(true);
+    setTimeout(() => setIsSaved(false), 2000);
+  };
+
   // Load Starter Template
   const handleSelectTemplate = (template: StarterTemplate) => {
     setGraph(template.graph);
     setProjectName(template.name);
+    
+    // Automatically save into project library
+    const newProj = createNewProject(template.name, template.graph, template.description, undefined, template.category);
+    setCurrentProjectId(newProj.id);
+    setSavedProjects(getSavedProjects());
+    setCurrentView('workspace');
+
     handleResetAttack();
     try {
       confetti({
@@ -246,28 +322,101 @@ export default function Home() {
   // Load Custom JSON
   const handleLoadJson = (newGraph: NetworkGraph) => {
     setGraph(newGraph);
+    const newProj = createNewProject(projectName || 'Imported Topology', newGraph);
+    setCurrentProjectId(newProj.id);
+    setSavedProjects(getSavedProjects());
+    setCurrentView('workspace');
     handleResetAttack();
+  };
+
+  // Intro & Dashboard Action Handlers
+  const handleCreateBlank = () => {
+    setGraph(EMPTY_GRAPH);
+    setProjectName('New Topology');
+    setCurrentProjectId(null);
+    setMode('build');
+    setCurrentView('workspace');
+    handleResetAttack();
+    setIsIntroOpen(false);
+  };
+
+  const handleOpenTemplatesFromIntro = () => {
+    setIsIntroOpen(false);
+    setIsTemplateModalOpen(true);
+  };
+
+  const handleImportJsonFromIntro = () => {
+    introFileInputRef.current?.click();
+  };
+
+  const handleIntroFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = event => {
+      try {
+        const parsed = JSON.parse(event.target?.result as string);
+        if (parsed.nodes && parsed.edges) {
+          setGraph(parsed as NetworkGraph);
+          const name = file.name.replace(/\.json$/i, '').replace(/_/g, ' ');
+          setProjectName(name);
+          const newProj = createNewProject(name, parsed as NetworkGraph);
+          setCurrentProjectId(newProj.id);
+          setSavedProjects(getSavedProjects());
+          setCurrentView('workspace');
+          handleResetAttack();
+          setIsIntroOpen(false);
+        }
+      } catch {
+        alert('Invalid topology JSON file structure.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const handleRunDemo = () => {
+    const demoTemplate = STARTER_TEMPLATES[0];
+    if (demoTemplate) {
+      setGraph(demoTemplate.graph);
+      setProjectName(demoTemplate.name);
+      const newProj = createNewProject(demoTemplate.name, demoTemplate.graph, demoTemplate.description, undefined, demoTemplate.category);
+      setCurrentProjectId(newProj.id);
+      setSavedProjects(getSavedProjects());
+      setMode('analyze');
+      setCurrentView('workspace');
+      handleResetAttack();
+    }
+    setIsIntroOpen(false);
   };
 
   // Reset Topology
   const handleReset = () => {
     if (confirm('Reset canvas topology to blank workspace?')) {
-      setGraph({
-        root_id: 'gw-1',
-        nodes: [
-          { id: 'gw-1', name: 'Gateway Alpha', type: 'gateway', tier: 1, capacity: 100, status: 'active', x: 450, y: 150 }
-        ],
-        edges: []
-      });
+      setGraph(EMPTY_GRAPH);
       setProjectName('Untitled Topology');
+      setCurrentProjectId(null);
       handleResetAttack();
     }
+  };
+
+  const handleToggleDashboard = () => {
+    setCurrentView(prev => prev === 'dashboard' ? 'workspace' : 'dashboard');
   };
 
   return (
     <div className={`flex flex-col h-screen w-screen overflow-hidden font-sans transition-colors duration-200 ${
       theme === 'dark' ? 'bg-[#090c15] text-slate-100' : 'bg-[#f8fafc] text-slate-900'
     }`}>
+      {/* Hidden file input for Introduction Modal */}
+      <input
+        ref={introFileInputRef}
+        type="file"
+        accept=".json"
+        onChange={handleIntroFileChange}
+        className="hidden"
+      />
+
       {/* Header Bar */}
       <Header
         mode={mode}
@@ -275,6 +424,12 @@ export default function Home() {
         projectName={projectName}
         onProjectNameChange={setProjectName}
         onOpenTemplates={() => setIsTemplateModalOpen(true)}
+        onOpenIntro={() => setIsIntroOpen(true)}
+        onOpenDashboard={handleToggleDashboard}
+        currentView={currentView}
+        savedProjectsCount={savedProjects.length}
+        onSaveToLibrary={handleSaveToLibrary}
+        isSaved={isSaved}
         onSaveJson={handleSaveJson}
         onLoadJson={handleLoadJson}
         onReset={handleReset}
@@ -283,78 +438,104 @@ export default function Home() {
         onToggleTheme={handleToggleTheme}
       />
 
-      {/* Main Workspace Body */}
-      <main className="flex-1 flex overflow-hidden relative">
-        {mode === 'build' ? (
-          <BuilderCanvas 
-            graph={graph} 
-            onGraphChange={handleGraphChange} 
-            theme={theme} 
-            onOpenTemplates={() => setIsTemplateModalOpen(true)} 
-          />
-        ) : (
-          <div className="flex-1 flex w-full h-[calc(100vh-64px)] overflow-hidden">
-            {/* Main Topological Canvas & Attack Controls */}
-            <div className="flex-1 flex flex-col h-full overflow-hidden">
-              <AttackPanel
-                attackedNodes={attackedNodes}
-                attackedEdges={attackedEdges}
-                onExecuteAttack={handleExecuteAttack}
-                onResetAttack={handleResetAttack}
-                onRunPreset={handleRunPreset}
-                isSimulating={isSimulating}
-                stepCaption={stepCaption}
-                stepNumber={stepNumber}
-              />
-
-              <div className="flex-1 relative overflow-hidden">
-                <AnalyzeCanvas
-                  graph={graph}
+      {/* Main Content Area: Switch between Existing Networks Dashboard and Canvas Workspace */}
+      {currentView === 'dashboard' ? (
+        <ProjectsDashboard
+          projects={savedProjects}
+          onOpenProject={handleOpenProject}
+          onCreateNew={handleCreateBlank}
+          onOpenTemplates={() => setIsTemplateModalOpen(true)}
+          onImportJson={handleImportJsonFromIntro}
+          onOpenIntro={() => setIsIntroOpen(true)}
+          onDeleteProject={handleDeleteProject}
+          theme={theme}
+        />
+      ) : (
+        <main className="flex-1 flex overflow-hidden relative">
+          {mode === 'build' ? (
+            <BuilderCanvas 
+              graph={graph} 
+              onGraphChange={handleGraphChange} 
+              theme={theme} 
+              onOpenTemplates={() => setIsTemplateModalOpen(true)} 
+            />
+          ) : (
+            <div className="flex-1 flex w-full h-[calc(100vh-64px)] overflow-hidden">
+              {/* Main Topological Canvas & Attack Controls */}
+              <div className="flex-1 flex flex-col h-full overflow-hidden">
+                <AttackPanel
                   attackedNodes={attackedNodes}
                   attackedEdges={attackedEdges}
-                  isolatedNodes={isolatedNodes}
-                  mengerPaths={mengerResult?.vertex_disjoint_paths}
-                  onToggleTargetNode={handleToggleTargetNode}
-                  onToggleTargetEdge={handleToggleTargetEdge}
-                  theme={theme}
+                  onExecuteAttack={handleExecuteAttack}
+                  onResetAttack={handleResetAttack}
+                  onRunPreset={handleRunPreset}
+                  isSimulating={isSimulating}
+                  stepCaption={stepCaption}
+                  stepNumber={stepNumber}
                 />
+
+                <div className="flex-1 relative overflow-hidden">
+                  <AnalyzeCanvas
+                    graph={graph}
+                    attackedNodes={attackedNodes}
+                    attackedEdges={attackedEdges}
+                    isolatedNodes={isolatedNodes}
+                    mengerPaths={mengerResult?.vertex_disjoint_paths}
+                    onToggleTargetNode={handleToggleTargetNode}
+                    onToggleTargetEdge={handleToggleTargetEdge}
+                    theme={theme}
+                  />
+                </div>
               </div>
+
+              {/* Analysis Dashboard Sidebar */}
+              <aside className={`w-96 backdrop-blur-2xl border-l p-5 overflow-y-auto space-y-4 h-full transition-colors duration-200 ${
+                theme === 'dark' 
+                  ? 'bg-[#0c101c]/95 border-white/[0.08] shadow-2xl text-slate-100' 
+                  : 'bg-white/95 border-slate-200/80 shadow-[-4px_0_24px_rgba(0,0,0,0.02)] text-slate-900'
+              }`}>
+                <StatsPanel
+                  resilience={resilience}
+                  totalNodesCount={graph.nodes.length}
+                  isolatedCount={isolatedNodes.length}
+                  capacityLostG={capacityLostG}
+                />
+
+                <LeaderboardPanel
+                  rankings={criticalityRankings}
+                  onSelectNode={handleToggleTargetNode}
+                  attackedNodes={attackedNodes}
+                />
+
+                <MengerPathPanel
+                  nodes={graph.nodes}
+                  mengerResult={mengerResult}
+                  onComputeMenger={handleComputeMenger}
+                />
+              </aside>
             </div>
-
-            {/* Analysis Dashboard Sidebar */}
-            <aside className={`w-96 backdrop-blur-2xl border-l p-5 overflow-y-auto space-y-4 h-full transition-colors duration-200 ${
-              theme === 'dark' 
-                ? 'bg-[#0c101c]/95 border-white/[0.08] shadow-2xl text-slate-100' 
-                : 'bg-white/95 border-slate-200/80 shadow-[-4px_0_24px_rgba(0,0,0,0.02)] text-slate-900'
-            }`}>
-              <StatsPanel
-                resilience={resilience}
-                totalNodesCount={graph.nodes.length}
-                isolatedCount={isolatedNodes.length}
-                capacityLostG={capacityLostG}
-              />
-
-              <LeaderboardPanel
-                rankings={criticalityRankings}
-                onSelectNode={handleToggleTargetNode}
-                attackedNodes={attackedNodes}
-              />
-
-              <MengerPathPanel
-                nodes={graph.nodes}
-                mengerResult={mengerResult}
-                onComputeMenger={handleComputeMenger}
-              />
-            </aside>
-          </div>
-        )}
-      </main>
+          )}
+        </main>
+      )}
 
       {/* Starter Templates Picker Modal */}
       <TemplateModal
         isOpen={isTemplateModalOpen}
         onClose={() => setIsTemplateModalOpen(false)}
         onSelectTemplate={handleSelectTemplate}
+      />
+
+      {/* Welcome Introduction & Onboarding Modal */}
+      <IntroductionModal
+        isOpen={isIntroOpen}
+        onClose={() => {
+          setIsIntroOpen(false);
+          setCurrentView('dashboard');
+        }}
+        onCreateNew={handleCreateBlank}
+        onOpenTemplates={handleOpenTemplatesFromIntro}
+        onImportJson={handleImportJsonFromIntro}
+        onRunDemo={handleRunDemo}
       />
     </div>
   );

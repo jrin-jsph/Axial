@@ -38,23 +38,18 @@ export const IntroductionModal: React.FC<IntroductionModalProps> = ({
       <div className="bg-white dark:bg-[#0f1422] border border-slate-200 dark:border-white/[0.08] rounded-3xl w-full max-w-3xl overflow-hidden shadow-2xl shadow-slate-900/20 dark:shadow-black/70 flex flex-col max-h-[90vh]">
         {/* Modal Header */}
         <div className="p-6 border-b border-slate-200 dark:border-white/[0.08] flex items-center justify-between bg-slate-50/60 dark:bg-white/[0.02]">
-          <div className="flex items-center gap-3.5">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-600/30">
-              <Network className="w-5 h-5" />
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+                Welcome to Axial Studio
+              </h2>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 font-semibold">
+                v2.0
+              </span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
-                  Welcome to Axial Studio
-                </h2>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 font-semibold">
-                  v2.0
-                </span>
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Enterprise Network Resilience & Graph-Theory Failure Simulator
-              </p>
-            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Enterprise Network Resilience & Graph-Theory Failure Simulator
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -232,9 +227,9 @@ export const IntroductionModal: React.FC<IntroductionModalProps> = ({
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-black dark:bg-white dark:hover:bg-slate-200 text-white dark:text-slate-900 shadow-sm transition-all cursor-pointer"
+            className="px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-500 text-white shadow-md shadow-blue-600/30 transition-all cursor-pointer"
           >
-            Enter Workspace
+            View My Networks
           </button>
         </div>
       </div>
