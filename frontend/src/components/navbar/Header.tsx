@@ -24,7 +24,6 @@ interface HeaderProps {
   projectName: string;
   onProjectNameChange: (name: string) => void;
   onOpenTemplates: () => void;
-  onOpenIntro?: () => void;
   onOpenDashboard?: () => void;
   currentView?: 'dashboard' | 'workspace';
   savedProjectsCount?: number;
@@ -33,6 +32,7 @@ interface HeaderProps {
   onSaveJson: () => void;
   onLoadJson: (graph: NetworkGraph) => void;
   onReset: () => void;
+  onError?: (title: string, message: string) => void;
   isBackendOnline: boolean;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
@@ -44,7 +44,6 @@ export const Header: React.FC<HeaderProps> = ({
   projectName,
   onProjectNameChange,
   onOpenTemplates,
-  onOpenIntro,
   onOpenDashboard,
   currentView = 'workspace',
   savedProjectsCount = 0,
@@ -53,6 +52,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSaveJson,
   onLoadJson,
   onReset,
+  onError,
   isBackendOnline,
   theme,
   onToggleTheme,
@@ -68,12 +68,19 @@ export const Header: React.FC<HeaderProps> = ({
         const parsed = JSON.parse(event.target?.result as string);
         if (parsed.nodes && parsed.edges) {
           onLoadJson(parsed as NetworkGraph);
+        } else {
+          if (onError) {
+            onError('Invalid JSON Schema', 'The uploaded file does not conform to the valid Axial network topology schema (nodes & edges required).');
+          }
         }
       } catch {
-        alert('Invalid topology JSON file structure.');
+        if (onError) {
+          onError('Invalid JSON Format', 'Failed to parse JSON file. Please check syntax and try again.');
+        }
       }
     };
     reader.readAsText(file);
+    e.target.value = '';
   };
 
   const isDark = theme === 'dark';
@@ -111,7 +118,7 @@ export const Header: React.FC<HeaderProps> = ({
         {onOpenDashboard && (
           <button
             onClick={onOpenDashboard}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+            className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all flex items-center gap-1.5 cursor-pointer shadow-sm whitespace-nowrap shrink-0 ${
               currentView === 'dashboard'
                 ? isDark 
                   ? 'bg-blue-600/20 text-blue-400 border-blue-500/40' 
@@ -122,10 +129,10 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
             title="View All Saved Topologies & Projects"
           >
-            <FolderOpen className="w-3.5 h-3.5 text-blue-500" />
-            <span>My Networks</span>
+            <FolderOpen className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+            <span className="whitespace-nowrap">My Networks</span>
             {savedProjectsCount > 0 && (
-              <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold ${
+              <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold leading-none ${
                 isDark ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-700'
               }`}>
                 {savedProjectsCount}
@@ -136,17 +143,17 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Minimal Search/Rename Pill */}
         {currentView === 'workspace' && (
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all shadow-sm ${
+          <div className={`flex items-center gap-2 px-2.5 py-1 rounded-full border transition-all shadow-sm shrink-0 ${
             isDark 
               ? 'bg-white/[0.03] border-white/[0.08] hover:border-white/[0.15] hover:bg-white/[0.06]' 
               : 'bg-slate-100/90 border-slate-200/80 hover:border-slate-300 hover:bg-white'
           }`}>
-            <Search className="w-3.5 h-3.5 text-slate-400" />
+            <Search className="w-3 h-3 text-slate-400 shrink-0" />
             <input
               type="text"
               value={projectName}
               onChange={e => onProjectNameChange(e.target.value)}
-              className={`bg-transparent text-xs font-semibold placeholder-slate-400 focus:outline-none w-36 sm:w-44 tracking-tight ${
+              className={`bg-transparent text-[11px] font-semibold placeholder-slate-400 focus:outline-none w-32 sm:w-40 tracking-tight ${
                 isDark ? 'text-slate-200 focus:text-white' : 'text-slate-800'
               }`}
               placeholder="Rename topology..."
@@ -155,14 +162,14 @@ export const Header: React.FC<HeaderProps> = ({
         )}
       </div>
 
-      {/* Center: Clean Rounded-Full Mode Switcher (only in workspace view) */}
+      {/* Center: Clean Compact Rounded-Full Mode Switcher (only in workspace view) */}
       {currentView === 'workspace' ? (
-        <div className={`flex items-center p-1 rounded-full border shadow-inner ${
+        <div className={`flex items-center p-0.5 rounded-full border shadow-inner ${
           isDark ? 'bg-[#141b2d] border-white/[0.08]' : 'bg-slate-100/90 border-slate-200/90'
         }`}>
           <button
             onClick={() => onModeChange('build')}
-            className={`px-4 py-1.5 rounded-full text-xs font-medium flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-3 py-1 rounded-full text-[11px] font-medium flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
               mode === 'build'
                 ? isDark 
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30 font-semibold' 
@@ -172,13 +179,13 @@ export const Header: React.FC<HeaderProps> = ({
                 : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            <Layers className="w-3.5 h-3.5" />
+            <Layers className="w-3 h-3 shrink-0" />
             <span>Build Canvas</span>
           </button>
 
           <button
             onClick={() => onModeChange('analyze')}
-            className={`px-4 py-1.5 rounded-full text-xs font-medium flex items-center gap-2 transition-all cursor-pointer ${
+            className={`px-3 py-1 rounded-full text-[11px] font-medium flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap ${
               mode === 'analyze'
                 ? isDark 
                   ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30 font-semibold' 
@@ -188,7 +195,7 @@ export const Header: React.FC<HeaderProps> = ({
                 : 'text-slate-500 hover:text-slate-900'
             }`}
           >
-            <Activity className="w-3.5 h-3.5" />
+            <Activity className="w-3 h-3 shrink-0" />
             <span>Attack & Analyze</span>
           </button>
         </div>
@@ -215,20 +222,6 @@ export const Header: React.FC<HeaderProps> = ({
           >
             {isSaved ? <Check className="w-3.5 h-3.5" /> : <Save className="w-3.5 h-3.5" />}
             <span>{isSaved ? 'Saved' : 'Save'}</span>
-          </button>
-        )}
-        {onOpenIntro && (
-          <button
-            onClick={onOpenIntro}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow ${
-              isDark
-                ? 'bg-white/[0.04] hover:bg-white/[0.08] border-white/[0.08] text-slate-300 hover:text-white'
-                : 'bg-slate-100/80 hover:bg-slate-200/80 border-slate-200/80 text-slate-700'
-            }`}
-            title="Open Welcome Introduction & Workflow Hub"
-          >
-            <HelpCircle className="w-3.5 h-3.5 text-blue-500" />
-            <span>Intro</span>
           </button>
         )}
 

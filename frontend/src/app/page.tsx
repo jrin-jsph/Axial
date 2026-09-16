@@ -12,6 +12,8 @@ import {
 import { Header } from '@/components/navbar/Header';
 import { TemplateModal } from '@/components/navbar/TemplateModal';
 import { IntroductionModal } from '@/components/navbar/IntroductionModal';
+import { SaveNetworkModal } from '@/components/navbar/SaveNetworkModal';
+import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { ProjectsDashboard } from '@/components/projects/ProjectsDashboard';
 import { BuilderCanvas } from '@/components/build/BuilderCanvas';
 import { AnalyzeCanvas } from '@/components/analyze/AnalyzeCanvas';
@@ -24,7 +26,6 @@ import {
   createNewProject, 
   updateProject, 
   deleteProject, 
-  seedSampleProjectsIfEmpty,
   saveProjectList 
 } from '@/lib/storage';
 import { SavedProject } from '@/lib/types';
@@ -40,9 +41,24 @@ export default function Home() {
   const [currentView, setCurrentView] = useState<'dashboard' | 'workspace'>('workspace');
   const [graph, setGraph] = useState<NetworkGraph>(EMPTY_GRAPH);
   const [projectName, setProjectName] = useState<string>('Untitled Topology');
+  const [projectDescription, setProjectDescription] = useState<string>('');
+  const [projectCategory, setProjectCategory] = useState<string>('Custom Design');
   const [mode, setMode] = useState<'build' | 'analyze'>('build');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
   const [isIntroOpen, setIsIntroOpen] = useState<boolean>(false);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState<boolean>(false);
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState<boolean>(false);
+  const [alertModalState, setAlertModalState] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    variant?: 'warning' | 'danger' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    variant: 'warning',
+  });
   const [isBackendOnline, setIsBackendOnline] = useState<boolean>(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [isSaved, setIsSaved] = useState<boolean>(false);
@@ -59,13 +75,17 @@ export default function Home() {
       document.documentElement.classList.remove('dark');
     }
 
-    // Projects hydration with starter blueprints seeded if empty
-    const existing = seedSampleProjectsIfEmpty();
+    // Load existing projects from localStorage (preserves user deletions and empty state)
+    const existing = getSavedProjects();
     setSavedProjects(existing);
 
-    // Show Intro Modal first, backed by the 'My Networks' Dashboard view
+    // If no networks created yet, load the intro modal. If 1 or more networks exist, do not show intro on refresh.
     setCurrentView('dashboard');
-    setIsIntroOpen(true);
+    if (existing.length === 0) {
+      setIsIntroOpen(true);
+    } else {
+      setIsIntroOpen(false);
+    }
   }, []);
 
   const handleToggleTheme = () => {
@@ -244,6 +264,8 @@ export default function Home() {
   const handleOpenProject = (project: SavedProject, initialMode: 'build' | 'analyze' = 'build') => {
     setGraph(project.graph);
     setProjectName(project.name);
+    setProjectDescription(project.description || '');
+    setProjectCategory(project.category || 'Custom Design');
     setCurrentProjectId(project.id);
     setMode(initialMode);
     setCurrentView('workspace');
@@ -259,28 +281,54 @@ export default function Home() {
     }
   };
 
-  // Save current workspace graph to library
+  // Open Save Modal when clicking Save in Header
   const handleSaveToLibrary = () => {
     if (graph.nodes.length === 0) {
-      alert('Cannot save an empty topology. Add nodes first.');
+      setAlertModalState({
+        isOpen: true,
+        title: 'Cannot Save Empty Topology',
+        message: 'Please drag and place at least one network node on the canvas before saving to your library.',
+        variant: 'warning',
+      });
       return;
     }
+    setIsSaveModalOpen(true);
+  };
+
+  // Confirm Save with Custom Name, Category and Description
+  const handleConfirmSave = (name: string, description: string, category: string) => {
+    setProjectName(name);
+    setProjectDescription(description);
+    setProjectCategory(category);
 
     if (currentProjectId) {
       const updated = updateProject(currentProjectId, {
-        name: projectName,
+        name,
+        description,
+        category,
         graph,
         resilience,
       });
       setSavedProjects(updated);
     } else {
-      const newProj = createNewProject(projectName, graph, undefined, resilience);
+      const newProj = createNewProject(name, graph, description, resilience, category);
       setCurrentProjectId(newProj.id);
       setSavedProjects(getSavedProjects());
     }
 
+    setIsSaveModalOpen(false);
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 2000);
+    try {
+      confetti({
+        particleCount: 35,
+        spread: 45,
+        origin: { y: 0.2 },
+        colors: ['#2563eb', '#10b981', '#6366f1']
+      });
+    } catch {
+      // Confetti fallback
+    }
   };
 
   // Load Starter Template
@@ -333,6 +381,8 @@ export default function Home() {
   const handleCreateBlank = () => {
     setGraph(EMPTY_GRAPH);
     setProjectName('New Topology');
+    setProjectDescription('');
+    setProjectCategory('Custom Design');
     setCurrentProjectId(null);
     setMode('build');
     setCurrentView('workspace');
@@ -366,9 +416,21 @@ export default function Home() {
           setCurrentView('workspace');
           handleResetAttack();
           setIsIntroOpen(false);
+        } else {
+          setAlertModalState({
+            isOpen: true,
+            title: 'Invalid Topology Schema',
+            message: 'The uploaded JSON file must contain "nodes" and "edges" arrays matching Axial schema.',
+            variant: 'danger',
+          });
         }
       } catch {
-        alert('Invalid topology JSON file structure.');
+        setAlertModalState({
+          isOpen: true,
+          title: 'Invalid JSON File',
+          message: 'Failed to parse JSON file. Please verify file formatting and try again.',
+          variant: 'danger',
+        });
       }
     };
     reader.readAsText(file);
@@ -390,14 +452,19 @@ export default function Home() {
     setIsIntroOpen(false);
   };
 
-  // Reset Topology
+  // Reset Topology Canvas
   const handleReset = () => {
-    if (confirm('Reset canvas topology to blank workspace?')) {
-      setGraph(EMPTY_GRAPH);
-      setProjectName('Untitled Topology');
-      setCurrentProjectId(null);
-      handleResetAttack();
-    }
+    setIsResetConfirmOpen(true);
+  };
+
+  const handleConfirmReset = () => {
+    setGraph(EMPTY_GRAPH);
+    setProjectName('Untitled Topology');
+    setProjectDescription('');
+    setProjectCategory('Custom Design');
+    setCurrentProjectId(null);
+    handleResetAttack();
+    setIsResetConfirmOpen(false);
   };
 
   const handleToggleDashboard = () => {
@@ -424,7 +491,6 @@ export default function Home() {
         projectName={projectName}
         onProjectNameChange={setProjectName}
         onOpenTemplates={() => setIsTemplateModalOpen(true)}
-        onOpenIntro={() => setIsIntroOpen(true)}
         onOpenDashboard={handleToggleDashboard}
         currentView={currentView}
         savedProjectsCount={savedProjects.length}
@@ -433,6 +499,7 @@ export default function Home() {
         onSaveJson={handleSaveJson}
         onLoadJson={handleLoadJson}
         onReset={handleReset}
+        onError={(title, message) => setAlertModalState({ isOpen: true, title, message, variant: 'danger' })}
         isBackendOnline={isBackendOnline}
         theme={theme}
         onToggleTheme={handleToggleTheme}
@@ -446,7 +513,6 @@ export default function Home() {
           onCreateNew={handleCreateBlank}
           onOpenTemplates={() => setIsTemplateModalOpen(true)}
           onImportJson={handleImportJsonFromIntro}
-          onOpenIntro={() => setIsIntroOpen(true)}
           onDeleteProject={handleDeleteProject}
           theme={theme}
         />
@@ -536,6 +602,42 @@ export default function Home() {
         onOpenTemplates={handleOpenTemplatesFromIntro}
         onImportJson={handleImportJsonFromIntro}
         onRunDemo={handleRunDemo}
+      />
+
+      {/* Save Network Custom Name & Description Modal */}
+      <SaveNetworkModal
+        isOpen={isSaveModalOpen}
+        onClose={() => setIsSaveModalOpen(false)}
+        onSave={handleConfirmSave}
+        currentName={projectName}
+        currentDescription={projectDescription}
+        currentCategory={projectCategory}
+        graph={graph}
+        resilience={resilience}
+      />
+
+      {/* In-App Reset Canvas Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={isResetConfirmOpen}
+        onClose={() => setIsResetConfirmOpen(false)}
+        onConfirm={handleConfirmReset}
+        title="Reset Canvas Workspace"
+        message="Are you sure you want to reset the canvas to a blank workspace? Any unsaved changes in your active topology will be cleared."
+        confirmText="Reset Canvas"
+        cancelText="Cancel"
+        variant="danger"
+        icon="reset"
+      />
+
+      {/* Generic In-App Notification / Warning Dialog */}
+      <ConfirmationModal
+        isOpen={alertModalState.isOpen}
+        onClose={() => setAlertModalState(prev => ({ ...prev, isOpen: false }))}
+        title={alertModalState.title}
+        message={alertModalState.message}
+        variant={alertModalState.variant || 'warning'}
+        icon="alert"
+        isAlertOnly
       />
     </div>
   );

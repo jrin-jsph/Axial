@@ -16,6 +16,7 @@ import {
   FolderOpen
 } from 'lucide-react';
 import { SavedProject, NetworkGraph } from '@/lib/types';
+import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 
 interface ProjectsDashboardProps {
   projects: SavedProject[];
@@ -23,7 +24,6 @@ interface ProjectsDashboardProps {
   onCreateNew: () => void;
   onOpenTemplates: () => void;
   onImportJson: () => void;
-  onOpenIntro: () => void;
   onDeleteProject: (projectId: string) => void;
   theme: 'light' | 'dark';
 }
@@ -34,12 +34,12 @@ export const ProjectsDashboard: React.FC<ProjectsDashboardProps> = ({
   onCreateNew,
   onOpenTemplates,
   onImportJson,
-  onOpenIntro,
   onDeleteProject,
   theme,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const isDark = theme === 'dark';
 
@@ -68,9 +68,7 @@ export const ProjectsDashboard: React.FC<ProjectsDashboardProps> = ({
 
   const handleDeleteSingle = (e: React.MouseEvent, projectId: string, projectName: string) => {
     e.stopPropagation();
-    if (confirm(`Are you sure you want to delete "${projectName}"?`)) {
-      onDeleteProject(projectId);
-    }
+    setProjectToDelete({ id: projectId, name: projectName });
   };
 
   return (
@@ -91,15 +89,6 @@ export const ProjectsDashboard: React.FC<ProjectsDashboardProps> = ({
 
           {/* Action Buttons */}
           <div className="flex items-center flex-wrap gap-2.5">
-            <button
-              onClick={onOpenIntro}
-              className="px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer shadow-sm bg-white dark:bg-white/[0.04] hover:bg-slate-50 dark:hover:bg-white/[0.08] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-200"
-              title="Platform Guide & Introduction"
-            >
-              <HelpCircle className="w-4 h-4 text-blue-500" />
-              <span>Guide / Intro</span>
-            </button>
-
             <button
               onClick={onImportJson}
               className="px-3.5 py-2 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer shadow-sm bg-white dark:bg-white/[0.04] hover:bg-slate-50 dark:hover:bg-white/[0.08] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-200"
@@ -306,6 +295,24 @@ export const ProjectsDashboard: React.FC<ProjectsDashboardProps> = ({
           })}
         </div>
       </div>
+
+      {/* In-App Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={!!projectToDelete}
+        onClose={() => setProjectToDelete(null)}
+        onConfirm={() => {
+          if (projectToDelete) {
+            onDeleteProject(projectToDelete.id);
+            setProjectToDelete(null);
+          }
+        }}
+        title="Delete Network Topology"
+        message={`Are you sure you want to delete "${projectToDelete?.name}"? This will permanently remove the topology schema from your saved library.`}
+        confirmText="Delete Network"
+        cancelText="Keep Topology"
+        variant="danger"
+        icon="trash"
+      />
     </div>
   );
 };
