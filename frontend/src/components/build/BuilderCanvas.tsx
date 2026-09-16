@@ -17,6 +17,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
+import { LayoutGrid, Sparkles } from 'lucide-react';
 import { AppNode, AppEdge, NetworkGraph, NodeType } from '@/lib/types';
 import { CustomNode, CustomNodeData } from './CustomNode';
 import { ComponentPalette } from './ComponentPalette';
@@ -25,14 +26,17 @@ import { InspectorDrawer } from './InspectorDrawer';
 interface BuilderCanvasProps {
   graph: NetworkGraph;
   onGraphChange: (newGraph: NetworkGraph) => void;
+  theme?: 'light' | 'dark';
+  onOpenTemplates?: () => void;
 }
 
 const nodeTypes = {
   custom: CustomNode,
 };
 
-const BuilderCanvasContent: React.FC<BuilderCanvasProps> = ({ graph, onGraphChange }) => {
+const BuilderCanvasContent: React.FC<BuilderCanvasProps> = ({ graph, onGraphChange, theme = 'dark', onOpenTemplates }) => {
   const reactFlowInstance = useReactFlow();
+  const isDark = theme === 'dark';
 
   // Convert AppNode[] -> ReactFlow Node[]
   const initialNodes: Node[] = useMemo(() => {
@@ -57,8 +61,8 @@ const BuilderCanvasContent: React.FC<BuilderCanvasProps> = ({ graph, onGraphChan
       source: e.source,
       target: e.target,
       label: `${e.capacity}G • ${e.latency}ms`,
-      labelStyle: { fill: '#475569', fontSize: 10, fontFamily: 'monospace', fontWeight: 600 },
-      labelBgStyle: { fill: '#ffffff', fillOpacity: 0.95, rx: 8, ry: 8 },
+      labelStyle: { fill: isDark ? '#e2e8f0' : '#475569', fontSize: 10, fontFamily: 'monospace', fontWeight: 600 },
+      labelBgStyle: { fill: isDark ? '#0f1422' : '#ffffff', fillOpacity: 0.95, rx: 8, ry: 8 },
       labelBgPadding: [6, 4] as [number, number],
       style: { 
         stroke: e.status === 'damaged' ? '#e11d48' : '#3b82f6', 
@@ -68,7 +72,7 @@ const BuilderCanvasContent: React.FC<BuilderCanvasProps> = ({ graph, onGraphChan
       animated: e.status === 'active',
       data: { capacity: e.capacity, latency: e.latency, status: e.status },
     }));
-  }, [graph.edges]);
+  }, [graph.edges, isDark]);
 
   const [nodes, setNodes] = useState<Node[]>(initialNodes);
   const [edges, setEdges] = useState<Edge[]>(initialEdges);
@@ -304,7 +308,7 @@ const BuilderCanvasContent: React.FC<BuilderCanvasProps> = ({ graph, onGraphChan
   };
 
   return (
-    <div className="flex w-full h-[calc(100vh-64px)] relative bg-[#f8fafc] bg-blueprint-grid">
+    <div className="flex w-full h-[calc(100vh-64px)] relative bg-[#f8fafc] dark:bg-[#090c15] bg-blueprint-grid">
       {/* Component Palette Sidebar */}
       <ComponentPalette />
 
@@ -324,17 +328,18 @@ const BuilderCanvasContent: React.FC<BuilderCanvasProps> = ({ graph, onGraphChan
           fitView
           className="bg-transparent"
         >
-          <Background color="#cbd5e1" gap={28} size={1} />
+          <Background color={isDark ? 'rgba(255, 255, 255, 0.08)' : '#cbd5e1'} gap={28} size={1} />
           <Controls position="top-left" />
           <MiniMap
             nodeColor={node => {
               const data = node.data as unknown as CustomNodeData;
               if (data.status === 'damaged') return '#e11d48';
-              if (data.tier === 1) return '#2563eb';
-              if (data.tier === 2) return '#7c3aed';
-              return '#94a3b8';
+              if (data.tier === 1) return '#3b82f6';
+              if (data.tier === 2) return '#8b5cf6';
+              return isDark ? '#64748b' : '#94a3b8';
             }}
-            maskColor="rgba(248, 250, 252, 0.8)"
+            maskColor={isDark ? 'rgba(9, 12, 21, 0.75)' : 'rgba(248, 250, 252, 0.8)'}
+            className="!border !border-slate-200 dark:!border-white/[0.08] !rounded-2xl !overflow-hidden"
           />
         </ReactFlow>
       </div>

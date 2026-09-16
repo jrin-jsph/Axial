@@ -69,27 +69,20 @@ export const Header: React.FC<HeaderProps> = ({
     }`}>
       {/* Left: Brand & Search-Style Project Name Pill */}
       <div className="flex items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 p-0.5 shadow-md shadow-blue-600/20 flex items-center justify-center">
-            <div className={`w-full h-full rounded-[14px] flex items-center justify-center ${isDark ? 'bg-[#090c15]' : 'bg-slate-950'}`}>
-              <Network className="w-4.5 h-4.5 text-white" />
-            </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className={`text-sm font-bold tracking-tight font-sans ${isDark ? 'text-white' : 'text-slate-900'}`}>
+              AXIAL
+            </span>
+            <span className={`text-[10px] font-mono font-medium px-2 py-0.5 rounded-full border ${
+              isDark 
+                ? 'bg-white/[0.06] text-blue-400 border-white/[0.08]' 
+                : 'bg-slate-100 text-slate-600 border-slate-200'
+            }`}>
+              STUDIO
+            </span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className={`text-sm font-bold tracking-tight font-sans ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                AXIAL
-              </span>
-              <span className={`text-[10px] font-mono font-medium px-2 py-0.5 rounded-full border ${
-                isDark 
-                  ? 'bg-white/[0.06] text-blue-400 border-white/[0.08]' 
-                  : 'bg-slate-100 text-slate-600 border-slate-200'
-              }`}>
-                STUDIO
-              </span>
-            </div>
-            <p className={`text-[11px] font-medium -mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>Resilience Engine</p>
-          </div>
+          <p className={`text-[11px] font-medium -mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>Resilience Engine</p>
         </div>
 
         <div className={`h-5 w-px ${isDark ? 'bg-white/[0.08]' : 'bg-slate-200'}`} />

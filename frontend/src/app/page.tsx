@@ -18,9 +18,14 @@ import { StatsPanel } from '@/components/analyze/StatsPanel';
 import { LeaderboardPanel } from '@/components/analyze/LeaderboardPanel';
 import { MengerPathPanel } from '@/components/analyze/MengerPathPanel';
 
+const EMPTY_GRAPH: NetworkGraph = {
+  nodes: [],
+  edges: [],
+};
+
 export default function Home() {
-  const [graph, setGraph] = useState<NetworkGraph>(STARTER_TEMPLATES[0].graph);
-  const [projectName, setProjectName] = useState<string>('University Campus Network');
+  const [graph, setGraph] = useState<NetworkGraph>(EMPTY_GRAPH);
+  const [projectName, setProjectName] = useState<string>('Untitled Topology');
   const [mode, setMode] = useState<'build' | 'analyze'>('build');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState<boolean>(false);
   const [isBackendOnline, setIsBackendOnline] = useState<boolean>(false);
@@ -281,7 +286,12 @@ export default function Home() {
       {/* Main Workspace Body */}
       <main className="flex-1 flex overflow-hidden relative">
         {mode === 'build' ? (
-          <BuilderCanvas graph={graph} onGraphChange={handleGraphChange} />
+          <BuilderCanvas 
+            graph={graph} 
+            onGraphChange={handleGraphChange} 
+            theme={theme} 
+            onOpenTemplates={() => setIsTemplateModalOpen(true)} 
+          />
         ) : (
           <div className="flex-1 flex w-full h-[calc(100vh-64px)] overflow-hidden">
             {/* Main Topological Canvas & Attack Controls */}
