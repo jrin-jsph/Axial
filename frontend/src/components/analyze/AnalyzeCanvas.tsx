@@ -653,6 +653,26 @@ export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
           100%
         </button>
       </div>
+      {/* Empty State Overlay */}
+      {graph.nodes.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-6 z-10 animate-in fade-in duration-300">
+          <div className={`p-8 rounded-3xl border backdrop-blur-2xl max-w-md text-center shadow-2xl space-y-4 pointer-events-auto ${
+            isDark 
+              ? 'bg-[#0f1422]/90 border-white/[0.08] shadow-black/60 text-white' 
+              : 'bg-white/95 border-slate-200 shadow-xl text-slate-900'
+          }`}>
+            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center mx-auto shadow-sm">
+              <Activity className="w-6 h-6" />
+            </div>
+            <div className="space-y-1.5">
+              <h3 className="text-base font-bold tracking-tight">No Active Topology</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                Switch to <strong className="text-blue-500">Build Canvas</strong> mode to drag and drop network components, or load a pre-built blueprint template.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

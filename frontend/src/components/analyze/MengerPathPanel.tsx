@@ -77,7 +77,7 @@ export const MengerPathPanel: React.FC<MengerPathPanelProps> = ({
 
       <button
         onClick={handleCompute}
-        disabled={sourceId === sinkId}
+        disabled={sourceId === sinkId || nodes.length < 2 || !sourceId || !sinkId}
         className="w-full py-2.5 px-3 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-black dark:bg-blue-600 dark:hover:bg-blue-700 disabled:opacity-40 text-white shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
       >
         <ShieldCheck className="w-4 h-4" />

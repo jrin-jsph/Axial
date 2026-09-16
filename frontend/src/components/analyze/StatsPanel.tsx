@@ -16,6 +16,7 @@ const GRADE_STYLES: Record<string, { badge: string; text: string }> = {
   'C': { badge: 'bg-amber-50 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-500/40', text: 'text-amber-700 dark:text-amber-400' },
   'D': { badge: 'bg-orange-50 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-500/40', text: 'text-orange-700 dark:text-orange-400' },
   'F': { badge: 'bg-rose-50 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/40 animate-pulse', text: 'text-rose-700 dark:text-rose-400' },
+  'N/A': { badge: 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/[0.08]', text: 'text-slate-500 dark:text-slate-400' },
 };
 
 export const StatsPanel: React.FC<StatsPanelProps> = ({
@@ -24,9 +25,10 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
   isolatedCount,
   capacityLostG,
 }) => {
-  const score = resilience?.resilience_score ?? 100;
-  const grade = resilience?.grade ?? 'A+';
-  const gradeStyle = GRADE_STYLES[grade] || GRADE_STYLES['B'];
+  const score = totalNodesCount === 0 ? 0 : (resilience?.resilience_score ?? 100);
+  const grade = totalNodesCount === 0 ? 'N/A' : (resilience?.grade ?? 'A+');
+  const gradeStyle = GRADE_STYLES[grade] || GRADE_STYLES['N/A'];
+  const summary = totalNodesCount === 0 ? 'No network nodes in workspace.' : (resilience?.summary || 'Network operational with full redundancy.');
 
   return (
     <div className="bg-white dark:bg-[#0f1422] border border-slate-200/90 dark:border-white/[0.08] rounded-3xl p-5 space-y-4 shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-none">
@@ -52,7 +54,7 @@ export const StatsPanel: React.FC<StatsPanelProps> = ({
             {score} <span className="text-xs font-normal text-slate-400">/ 100</span>
           </div>
           <p className="text-[11px] mt-1 text-slate-600 dark:text-slate-300 line-clamp-1 leading-snug">
-            {resilience?.summary || 'Network operational with full redundancy.'}
+            {summary}
           </p>
         </div>
 

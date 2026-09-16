@@ -342,6 +342,36 @@ const BuilderCanvasContent: React.FC<BuilderCanvasProps> = ({ graph, onGraphChan
             className="!border !border-slate-200 dark:!border-white/[0.08] !rounded-2xl !overflow-hidden"
           />
         </ReactFlow>
+
+        {/* Empty Workspace Prompt Card */}
+        {nodes.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-6 z-10 animate-in fade-in duration-300">
+            <div className={`p-8 rounded-3xl border backdrop-blur-2xl max-w-md text-center shadow-2xl space-y-4 pointer-events-auto ${
+              isDark 
+                ? 'bg-[#0f1422]/90 border-white/[0.08] shadow-black/60 text-white' 
+                : 'bg-white/95 border-slate-200 shadow-xl text-slate-900'
+            }`}>
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-500 flex items-center justify-center mx-auto shadow-sm">
+                <Sparkles className="w-6 h-6" />
+              </div>
+              <div className="space-y-1.5">
+                <h3 className="text-base font-bold tracking-tight">Empty Topology Workspace</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Drag architecture components from the left palette to build your custom network, or load an enterprise blueprint template.
+                </p>
+              </div>
+              {onOpenTemplates && (
+                <button
+                  onClick={onOpenTemplates}
+                  className="px-4 py-2.5 rounded-2xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/30 transition-all cursor-pointer flex items-center justify-center gap-2 mx-auto"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                  <span>Choose Blueprint Template</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Inspector Drawer */}
