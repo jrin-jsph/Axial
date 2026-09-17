@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ShieldAlert, RefreshCw, Play, Crosshair, Sparkles, Gauge, FastForward, CheckCircle2 } from 'lucide-react';
+import { ShieldAlert, RefreshCw, Play, Crosshair, Sparkles, Gauge, FastForward, CheckCircle2, Volume2, VolumeX } from 'lucide-react';
+import { soundFx } from '@/lib/soundEffects';
 
 interface AttackPanelProps {
   attackedNodes: string[];
@@ -23,6 +24,7 @@ export const AttackPanel: React.FC<AttackPanelProps> = ({
   stepNumber,
 }) => {
   const [speedMultiplier, setSpeedMultiplier] = useState<'0.5x' | '1x' | '2x'>('1x');
+  const [soundActive, setSoundActive] = useState<boolean>(soundFx.isEnabled());
 
   return (
     <div className="bg-white/95 dark:bg-[#0f1422]/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/[0.08] p-4 space-y-3 shadow-[0_1px_3px_rgba(0,0,0,0.02)]">
@@ -58,18 +60,48 @@ export const AttackPanel: React.FC<AttackPanelProps> = ({
             ))}
           </div>
 
+          {/* Audio FX Toggle */}
+          <button
+            onClick={() => {
+              const enabled = soundFx.toggleSound();
+              setSoundActive(enabled);
+            }}
+            className={`p-2 rounded-2xl border text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
+              soundActive
+                ? 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30 text-blue-600 dark:text-blue-400'
+                : 'bg-slate-100 dark:bg-white/[0.06] border-slate-200 dark:border-white/[0.08] text-slate-400 dark:text-slate-500'
+            }`}
+            title={soundActive ? 'Cyber Sound FX Enabled' : 'Cyber Sound FX Muted'}
+          >
+            {soundActive ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
+          </button>
+
           <button
             onClick={onExecuteAttack}
-            disabled={attackedNodes.length === 0 && attackedEdges.length === 0}
-            className="px-4 py-2 rounded-2xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:hover:bg-rose-600 text-white shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+            disabled={isSimulating || (attackedNodes.length === 0 && attackedEdges.length === 0)}
+            className={`relative overflow-hidden px-4 py-2 rounded-2xl text-xs font-semibold transition-all flex items-center gap-2 cursor-pointer shadow-sm ${
+              isSimulating
+                ? 'bg-rose-600 text-white animate-attack-beacon ring-2 ring-rose-500/50'
+                : attackedNodes.length > 0 || attackedEdges.length > 0
+                ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-rose-600/30 shadow-md hover:scale-[1.02] active:scale-[0.98]'
+                : 'bg-rose-600/40 text-white/50 cursor-not-allowed'
+            }`}
           >
-            <Crosshair className="w-4 h-4" />
-            <span>Execute Attack ({attackedNodes.length + attackedEdges.length} Targets)</span>
+            {isSimulating && (
+              <span className="absolute inset-0 animate-hazard-stripes pointer-events-none opacity-30" />
+            )}
+            <Crosshair className={`w-4 h-4 ${isSimulating ? 'animate-spin text-amber-300' : ''}`} />
+            <span>
+              {isSimulating
+                ? 'Simulating Attack Vector...'
+                : `Execute Attack (${attackedNodes.length + attackedEdges.length} Targets)`}
+            </span>
           </button>
 
           <button
             onClick={onResetAttack}
-            className="px-3.5 py-2 rounded-2xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200/80 dark:hover:bg-white/[0.12] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow"
+            disabled={isSimulating}
+            className="px-3.5 py-2 rounded-2xl text-xs font-semibold bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200/80 dark:hover:bg-white/[0.12] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm hover:shadow disabled:opacity-50"
           >
             <RefreshCw className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
             <span>Restore Health</span>

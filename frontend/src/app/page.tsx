@@ -29,6 +29,7 @@ import {
   saveProjectList 
 } from '@/lib/storage';
 import { SavedProject } from '@/lib/types';
+import { soundFx } from '@/lib/soundEffects';
 
 const EMPTY_GRAPH: NetworkGraph = {
   nodes: [],
@@ -116,6 +117,7 @@ export default function Home() {
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [stepCaption, setStepCaption] = useState<string>('');
   const [stepNumber, setStepNumber] = useState<number>(1);
+  const [attackTriggerId, setAttackTriggerId] = useState<number>(0);
 
   // Check Backend Engine Status
   useEffect(() => {
@@ -152,6 +154,7 @@ export default function Home() {
 
   // Toggle Attack Target Node
   const handleToggleTargetNode = (nodeId: string) => {
+    soundFx.playTargetLock();
     setAttackedNodes(prev =>
       prev.includes(nodeId) ? prev.filter(id => id !== nodeId) : [...prev, nodeId]
     );
@@ -159,6 +162,7 @@ export default function Home() {
 
   // Toggle Attack Target Edge
   const handleToggleTargetEdge = (edgeId: string) => {
+    soundFx.playTargetLock();
     setAttackedEdges(prev =>
       prev.includes(edgeId) ? prev.filter(id => id !== edgeId) : [...prev, edgeId]
     );
@@ -166,11 +170,21 @@ export default function Home() {
 
   // Execute Custom Attack
   const handleExecuteAttack = async () => {
+    if (attackedNodes.length === 0 && attackedEdges.length === 0) return;
+
     setIsSimulating(true);
     setStepNumber(1);
-    setStepCaption('Initiating attack simulation & calculating graph disruptions...');
+    soundFx.playTargetLock();
+    setStepCaption(`Locking vector on ${attackedNodes.length + attackedEdges.length} targeted assets...`);
+    setAttackTriggerId(Date.now());
 
-    await new Promise(r => setTimeout(r, 600));
+    await new Promise(r => setTimeout(r, 450));
+
+    setStepNumber(2);
+    soundFx.playAttackLaser();
+    setStepCaption('Orbital strike beam dispatched. Disrupting graph topology in real time...');
+
+    await new Promise(r => setTimeout(r, 550));
 
     const result = await simulateAttack(graph, attackedNodes, attackedEdges);
 
@@ -182,15 +196,16 @@ export default function Home() {
     setCapacityLostG(result.total_capacity_lost);
     setResilience(result.resilience);
 
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 900));
 
     setStepNumber(4);
-    setStepCaption(`Rerouting surviving traffic. Final Resilience Rating: ${result.resilience.resilience_score}/100 (${result.resilience.grade})`);
+    setStepCaption(`Traffic rerouting converged. Final Resilience Rating: ${result.resilience.resilience_score}/100 (${result.resilience.grade})`);
     setIsSimulating(false);
   };
 
   // Reset / Clear Attack State
   const handleResetAttack = () => {
+    soundFx.playRestore();
     setAttackedNodes([]);
     setAttackedEdges([]);
     setIsolatedNodes([]);
@@ -199,8 +214,8 @@ export default function Home() {
     refreshAnalysisData(graph);
     try {
       confetti({
-        particleCount: 50,
-        spread: 60,
+        particleCount: 60,
+        spread: 70,
         origin: { y: 0.8 },
         colors: ['#2563eb', '#10b981', '#6366f1', '#f59e0b']
       });
@@ -213,9 +228,10 @@ export default function Home() {
   const handleRunPreset = async (scenarioId: 'single_point' | 'regional' | 'coordinated') => {
     setIsSimulating(true);
     setStepNumber(1);
+    soundFx.playTargetLock();
     setStepCaption('Scanning network graph topology for vulnerable targets...');
 
-    await new Promise(r => setTimeout(r, 700));
+    await new Promise(r => setTimeout(r, 500));
 
     let targetNodes: string[] = [];
     let targetEdges: string[] = [];
@@ -223,7 +239,7 @@ export default function Home() {
     if (scenarioId === 'single_point') {
       const topNode = criticalityRankings[0]?.id || graph.nodes[0]?.id;
       targetNodes = topNode ? [topNode] : [];
-      setStepCaption(`Target Locked: Single point of failure [${targetNodes[0]}]`);
+      setStepCaption(`Target Locked: Single point of failure [${targetNodes[0] || 'Core'}]`);
     } else if (scenarioId === 'regional') {
       targetNodes = criticalityRankings.slice(0, 2).map(n => n.id);
       setStepCaption('Target Locked: Regional power outage across multiple distribution hubs');
@@ -235,9 +251,12 @@ export default function Home() {
 
     setAttackedNodes(targetNodes);
     setAttackedEdges(targetEdges);
+    setAttackTriggerId(Date.now());
     setStepNumber(2);
 
-    await new Promise(r => setTimeout(r, 900));
+    soundFx.playAttackLaser();
+
+    await new Promise(r => setTimeout(r, 700));
 
     const result = await simulateAttack(graph, targetNodes, targetEdges);
 
@@ -550,6 +569,9 @@ export default function Home() {
                     onToggleTargetNode={handleToggleTargetNode}
                     onToggleTargetEdge={handleToggleTargetEdge}
                     theme={theme}
+                    isSimulating={isSimulating}
+                    stepNumber={stepNumber}
+                    attackTriggerId={attackTriggerId}
                   />
                 </div>
               </div>

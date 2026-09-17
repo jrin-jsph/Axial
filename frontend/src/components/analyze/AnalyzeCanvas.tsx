@@ -10,8 +10,13 @@ import {
   Wifi, 
   ArrowRight,
   Sparkles,
-  Info
+  Info,
+  Radio,
+  Flame,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
+import { soundFx } from '@/lib/soundEffects';
 
 interface AnalyzeCanvasProps {
   graph: NetworkGraph;
@@ -22,9 +27,44 @@ interface AnalyzeCanvasProps {
   onToggleTargetNode: (nodeId: string) => void;
   onToggleTargetEdge: (edgeId: string) => void;
   theme?: 'light' | 'dark';
+  isSimulating?: boolean;
+  stepNumber?: number;
+  attackTriggerId?: number;
 }
 
 const MENGER_COLORS = ['#2563eb', '#7c3aed', '#059669', '#d97706', '#db2777'];
+
+interface LaserBeam {
+  id: string;
+  startX: number;
+  startY: number;
+  targetX: number;
+  targetY: number;
+  progress: number;
+  speed: number;
+  hasImpacted: boolean;
+  targetId: string;
+}
+
+interface SparkParticle {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  size: number;
+  color: string;
+  alpha: number;
+  decay: number;
+}
+
+interface ShockwaveFX {
+  x: number;
+  y: number;
+  radius: number;
+  maxRadius: number;
+  alpha: number;
+  color: string;
+}
 
 export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
   graph,
@@ -35,6 +75,9 @@ export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
   onToggleTargetNode,
   onToggleTargetEdge,
   theme = 'light',
+  isSimulating = false,
+  stepNumber = 1,
+  attackTriggerId = 0,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -45,6 +88,7 @@ export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
   const [hoveredNode, setHoveredNode] = useState<AppNode | null>(null);
   const [hoveredEdge, setHoveredEdge] = useState<AppEdge | null>(null);
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isScreenShaking, setIsScreenShaking] = useState<boolean>(false);
 
   // Pan & Zoom Transform State
   const [transform, setTransform] = useState<{ x: number; y: number; scale: number }>({ x: 0, y: 0, scale: 1 });
@@ -54,6 +98,53 @@ export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
   const attackedNodeSet = new Set(attackedNodes);
   const attackedEdgeSet = new Set(attackedEdges);
   const isolatedNodeSet = new Set(isolatedNodes);
+
+  // Dynamic FX references across frames
+  const beamsRef = useRef<LaserBeam[]>([]);
+  const particlesRef = useRef<SparkParticle[]>([]);
+  const shockwavesRef = useRef<ShockwaveFX[]>([]);
+
+  // Trigger screen shake
+  const triggerScreenShake = useCallback(() => {
+    setIsScreenShaking(true);
+    setTimeout(() => {
+      setIsScreenShaking(false);
+    }, 450);
+  }, []);
+
+  // Spawn Laser Beams & Blast Particles when Attack is triggered
+  useEffect(() => {
+    if (attackTriggerId === 0 || (attackedNodes.length === 0 && attackedEdges.length === 0)) return;
+
+    const nodeMap = new Map<string, AppNode>();
+    graph.nodes.forEach(n => nodeMap.set(n.id, n));
+
+    const newBeams: LaserBeam[] = [];
+
+    attackedNodes.forEach((nodeId, idx) => {
+      const node = nodeMap.get(nodeId);
+      if (!node) return;
+
+      // Spawn beam from above/angles outside canvas
+      const angle = (idx % 2 === 0 ? -1 : 1) * (0.3 + Math.random() * 0.4);
+      const startX = node.x + Math.sin(angle) * 700;
+      const startY = node.y - 650;
+
+      newBeams.push({
+        id: `beam-${nodeId}-${Date.now()}-${idx}`,
+        startX,
+        startY,
+        targetX: node.x,
+        targetY: node.y,
+        progress: 0,
+        speed: 0.045 + Math.random() * 0.02,
+        hasImpacted: false,
+        targetId: nodeId,
+      });
+    });
+
+    beamsRef.current = newBeams;
+  }, [attackTriggerId, attackedNodes, graph.nodes]);
 
   // Auto-resize canvas buffer to match container pixel size
   useEffect(() => {
@@ -103,10 +194,12 @@ export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
     let animFrameId: number;
     let particleOffset = 0;
     let shockwaveRadius = 0;
+    let globalAngle = 0;
 
     const render = () => {
       particleOffset = (particleOffset + 0.8) % 100;
       shockwaveRadius = (shockwaveRadius + 0.5) % 40;
+      globalAngle = (globalAngle + 0.03) % (Math.PI * 2);
 
       // Clean and fill canvas background for active theme
       ctx.fillStyle = isDark ? '#090c15' : '#f8fafc';
@@ -169,6 +262,43 @@ export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
         ctx.stroke();
         ctx.shadowBlur = 0;
         ctx.setLineDash([]);
+
+        // Electric lightning sparks along attacked / damaged links
+        if (isEdgeAttacked && isSimulating) {
+          const midX = (source.x + target.x) / 2;
+          const midY = (source.y + target.y) / 2;
+          
+          if (Math.random() < 0.3) {
+            particlesRef.current.push({
+              x: midX + (Math.random() - 0.5) * 30,
+              y: midY + (Math.random() - 0.5) * 30,
+              vx: (Math.random() - 0.5) * 4,
+              vy: (Math.random() - 0.5) * 4,
+              size: Math.random() * 2.5 + 1.5,
+              color: '#f43f5e',
+              alpha: 1,
+              decay: 0.04,
+            });
+          }
+
+          // Draw jittery electrical lightning arc
+          ctx.beginPath();
+          ctx.moveTo(source.x, source.y);
+          const segments = 4;
+          for (let s = 1; s < segments; s++) {
+            const frac = s / segments;
+            const sx = source.x + (target.x - source.x) * frac + (Math.random() - 0.5) * 8;
+            const sy = source.y + (target.y - source.y) * frac + (Math.random() - 0.5) * 8;
+            ctx.lineTo(sx, sy);
+          }
+          ctx.lineTo(target.x, target.y);
+          ctx.strokeStyle = 'rgba(244, 63, 94, 0.7)';
+          ctx.lineWidth = 1.5;
+          ctx.shadowColor = '#f43f5e';
+          ctx.shadowBlur = 6;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        }
 
         // Draw animated flow particles along active un-attacked edges
         if (!isEdgeAttacked) {
@@ -234,7 +364,128 @@ export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
         ctx.restore();
       });
 
-      // 2. Draw Nodes
+      // 2. Draw Active Laser Orbital Beams
+      beamsRef.current.forEach(beam => {
+        beam.progress += beam.speed;
+
+        const currentX = beam.startX + (beam.targetX - beam.startX) * Math.min(1, beam.progress);
+        const currentY = beam.startY + (beam.targetY - beam.startY) * Math.min(1, beam.progress);
+
+        const tailProgress = Math.max(0, beam.progress - 0.25);
+        const tailX = beam.startX + (beam.targetX - beam.startX) * tailProgress;
+        const tailY = beam.startY + (beam.targetY - beam.startY) * tailProgress;
+
+        // Draw glowing laser trajectory
+        const grad = ctx.createLinearGradient(tailX, tailY, currentX, currentY);
+        grad.addColorStop(0, 'rgba(225, 29, 72, 0)');
+        grad.addColorStop(0.5, 'rgba(244, 63, 94, 0.8)');
+        grad.addColorStop(1, '#ffffff');
+
+        ctx.beginPath();
+        ctx.moveTo(tailX, tailY);
+        ctx.lineTo(currentX, currentY);
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 4.5;
+        ctx.shadowColor = '#e11d48';
+        ctx.shadowBlur = 18;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Laser head core flare
+        ctx.beginPath();
+        ctx.arc(currentX, currentY, 6, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#fb7185';
+        ctx.shadowBlur = 14;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Check if arrived at target node
+        if (beam.progress >= 1 && !beam.hasImpacted) {
+          beam.hasImpacted = true;
+          triggerScreenShake();
+          soundFx.playExplosion();
+
+          // Spawn explosion shockwaves
+          shockwavesRef.current.push({
+            x: beam.targetX,
+            y: beam.targetY,
+            radius: 8,
+            maxRadius: 70,
+            alpha: 1,
+            color: '#f43f5e',
+          });
+          shockwavesRef.current.push({
+            x: beam.targetX,
+            y: beam.targetY,
+            radius: 4,
+            maxRadius: 45,
+            alpha: 1,
+            color: '#fbbf24',
+          });
+
+          // Spawn burst particles
+          for (let i = 0; i < 35; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 6 + 2;
+            particlesRef.current.push({
+              x: beam.targetX,
+              y: beam.targetY,
+              vx: Math.cos(angle) * speed,
+              vy: Math.sin(angle) * speed,
+              size: Math.random() * 3.5 + 1.5,
+              color: i % 3 === 0 ? '#ffffff' : i % 2 === 0 ? '#fb7185' : '#f59e0b',
+              alpha: 1,
+              decay: Math.random() * 0.03 + 0.02,
+            });
+          }
+        }
+      });
+
+      // Filter finished beams
+      beamsRef.current = beamsRef.current.filter(b => b.progress < 1.3);
+
+      // 3. Draw & Update Shockwaves
+      shockwavesRef.current.forEach(sw => {
+        sw.radius += 2.5;
+        sw.alpha = Math.max(0, 1 - sw.radius / sw.maxRadius);
+
+        ctx.beginPath();
+        ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+        ctx.strokeStyle = sw.color;
+        ctx.lineWidth = Math.max(1, 4 * sw.alpha);
+        ctx.globalAlpha = sw.alpha;
+        ctx.shadowColor = sw.color;
+        ctx.shadowBlur = 12;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+      });
+      shockwavesRef.current = shockwavesRef.current.filter(sw => sw.radius < sw.maxRadius);
+
+      // 4. Draw & Update Blast Particles
+      particlesRef.current.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vx *= 0.95;
+        p.vy *= 0.95;
+        p.alpha -= p.decay;
+
+        if (p.alpha > 0) {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = Math.max(0, p.alpha);
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = 6;
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.shadowBlur = 0;
+        }
+      });
+      particlesRef.current = particlesRef.current.filter(p => p.alpha > 0);
+
+      // 5. Draw Nodes
       graph.nodes.forEach(node => {
         const isAttacked = attackedNodeSet.has(node.id);
         const isIsolated = isolatedNodeSet.has(node.id);
@@ -254,8 +505,22 @@ export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
           ctx.beginPath();
           ctx.arc(0, 0, 24 + shockwaveRadius, 0, Math.PI * 2);
           ctx.strokeStyle = `rgba(225, 29, 72, ${Math.max(0, 1 - shockwaveRadius / 40)})`;
-          ctx.lineWidth = 1.5;
+          ctx.lineWidth = 2;
           ctx.stroke();
+
+          // Continuous subtle sparks while attacked
+          if (Math.random() < 0.25) {
+            particlesRef.current.push({
+              x: node.x + (Math.random() - 0.5) * 30,
+              y: node.y + (Math.random() - 0.5) * 30,
+              vx: (Math.random() - 0.5) * 3,
+              vy: (Math.random() - 0.5) * 3,
+              size: Math.random() * 2.5 + 1,
+              color: '#f43f5e',
+              alpha: 0.9,
+              decay: 0.03,
+            });
+          }
         }
 
         // Active node pulse halo
@@ -266,7 +531,7 @@ export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
           ctx.fill();
         }
 
-        // Node Outer Halo
+        // Node Outer Circle
         ctx.beginPath();
         ctx.arc(0, 0, baseRadius, 0, Math.PI * 2);
 
@@ -311,6 +576,48 @@ export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
         ctx.fillStyle = isAttacked ? '#e11d48' : isIsolated ? '#94a3b8' : isRoot ? '#2563eb' : '#7c3aed';
         ctx.fill();
 
+        // 6. Holographic Target Reticle for Attacked Nodes
+        if (isAttacked) {
+          const reticleRadius = baseRadius + 10;
+          ctx.save();
+          ctx.rotate(globalAngle);
+
+          // 4 Rotating Target Brackets
+          const bracketLen = 0.35;
+          for (let b = 0; b < 4; b++) {
+            const startA = (b * Math.PI) / 2 - bracketLen / 2;
+            const endA = (b * Math.PI) / 2 + bracketLen / 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, reticleRadius, startA, endA);
+            ctx.strokeStyle = '#f43f5e';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = '#f43f5e';
+            ctx.shadowBlur = 8;
+            ctx.stroke();
+          }
+
+          // Target crosshair ticks
+          ctx.beginPath();
+          ctx.moveTo(-reticleRadius - 4, 0);
+          ctx.lineTo(-reticleRadius + 4, 0);
+          ctx.moveTo(reticleRadius - 4, 0);
+          ctx.lineTo(reticleRadius + 4, 0);
+          ctx.moveTo(0, -reticleRadius - 4);
+          ctx.lineTo(0, -reticleRadius + 4);
+          ctx.moveTo(0, reticleRadius - 4);
+          ctx.lineTo(0, reticleRadius + 4);
+          ctx.strokeStyle = '#f43f5e';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          ctx.restore();
+
+          // Target tag pill
+          ctx.font = '700 8px monospace';
+          ctx.fillStyle = '#f43f5e';
+          ctx.fillText('TARGET LOCK', 0, -reticleRadius - 6);
+        }
+
         // Node Label
         ctx.font = isHovered ? '700 12px system-ui, -apple-system, sans-serif' : '600 11px system-ui, -apple-system, sans-serif';
         ctx.textAlign = 'center';
@@ -335,7 +642,7 @@ export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
     return () => {
       cancelAnimationFrame(animFrameId);
     };
-  }, [graph, attackedNodes, attackedEdges, isolatedNodes, mengerPaths, hoveredNode, hoveredEdge, transform, isDark, canvasSize]);
+  }, [graph, attackedNodes, attackedEdges, isolatedNodes, mengerPaths, hoveredNode, hoveredEdge, transform, isDark, canvasSize, isSimulating, triggerScreenShake]);
 
   // Coordinate projection from Screen to Flow Canvas Coordinates
   const getCanvasCoords = useCallback((clientX: number, clientY: number) => {
@@ -455,12 +762,14 @@ export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
     }
 
     if (closestNode) {
+      soundFx.playTargetLock();
       onToggleTargetNode(closestNode.id);
       return;
     }
 
     // 2. Check if clicked edge
     if (hoveredEdge) {
+      soundFx.playTargetLock();
       onToggleTargetEdge(hoveredEdge.id);
     }
   };
@@ -496,7 +805,7 @@ export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
       ref={containerRef}
       className={`relative w-full h-full bg-blueprint-grid flex items-center justify-center overflow-hidden select-none ${
         isDark ? 'bg-[#090c15]' : 'bg-[#f8fafc]'
-      }`}
+      } ${isScreenShaking ? 'animate-screen-shake' : ''}`}
     >
       <canvas
         ref={canvasRef}
@@ -510,6 +819,13 @@ export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
         onMouseUp={handleMouseUp}
         className={`w-full h-full block cursor-${hoveredNode || hoveredEdge ? 'pointer' : isPanning ? 'grabbing' : 'crosshair'}`}
       />
+
+      {/* Live Threat Radar Scan Line Effect */}
+      {isSimulating && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="w-full h-1 bg-gradient-to-r from-transparent via-rose-500/80 to-transparent shadow-[0_0_15px_#f43f5e] animate-radar-sweep opacity-70" />
+        </div>
+      )}
 
       {/* Interactive Floating Hover Tooltip Card */}
       {hoveredNode && (
@@ -533,7 +849,7 @@ export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
             <span
               className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full ${
                 attackedNodeSet.has(hoveredNode.id)
-                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30 font-bold animate-pulse'
                   : isolatedNodeSet.has(hoveredNode.id)
                   ? isDark ? 'bg-white/[0.06] text-slate-400 border border-white/[0.08]' : 'bg-slate-100 text-slate-600 border border-slate-200'
                   : isDark ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-emerald-100 text-emerald-700 border border-emerald-300'
@@ -602,7 +918,10 @@ export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
         isDark ? 'bg-[#0f1422]/90 border-white/[0.08] text-white shadow-black/60' : 'bg-white/90 border-slate-200/90 text-slate-900 shadow-[0_4px_20px_rgba(0,0,0,0.06)]'
       }`}>
         <div className={`font-mono text-[10px] uppercase font-bold tracking-wider flex items-center justify-between gap-4 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-          <span>Live Simulation Canvas</span>
+          <span className="flex items-center gap-1.5">
+            {isSimulating ? <Flame className="w-3.5 h-3.5 text-rose-500 animate-bounce" /> : <Activity className="w-3.5 h-3.5 text-blue-500" />}
+            <span>{isSimulating ? 'Active Cyber Strike Simulation' : 'Live Topological Canvas'}</span>
+          </span>
           <span className={`text-[9px] px-1.5 py-0.5 rounded font-mono ${isDark ? 'bg-white/[0.06] text-slate-300' : 'bg-slate-100 text-slate-600'}`}>
             Zoom {Math.round(transform.scale * 100)}%
           </span>
@@ -612,8 +931,8 @@ export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
           <span className={`text-[11px] font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Active Ingress Root / Backbone</span>
         </div>
         <div className="flex items-center gap-2.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e]" />
-          <span className={`text-[11px] font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Targeted / Disrupted Node</span>
+          <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_#f43f5e] animate-pulse" />
+          <span className={`text-[11px] font-medium ${isDark ? 'text-slate-300' : 'text-slate-700'}`}>Targeted Strike Vector</span>
         </div>
         <div className="flex items-center gap-2.5">
           <span className="w-2.5 h-2.5 rounded-full bg-slate-500" />
@@ -653,6 +972,7 @@ export const AnalyzeCanvas: React.FC<AnalyzeCanvasProps> = ({
           100%
         </button>
       </div>
+
       {/* Empty State Overlay */}
       {graph.nodes.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-6 z-10 animate-in fade-in duration-300">
